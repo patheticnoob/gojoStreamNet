@@ -1,14 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { tmdbApi } from "./slices/apiSlice";
-import discoverReducer from "./slices/discover";
+import { hiAnimeApi } from "./slices/hiAnimeApi";
+import { yumaApi } from "./slices/yumaApi";
 
 const store = configureStore({
   reducer: {
-    discover: discoverReducer,
-    [tmdbApi.reducerPath]: tmdbApi.reducer,
+    [hiAnimeApi.reducerPath]: hiAnimeApi.reducer,
+    [yumaApi.reducerPath]: yumaApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(tmdbApi.middleware),
+    getDefaultMiddleware().concat(
+      hiAnimeApi.middleware,
+      yumaApi.middleware
+    ),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

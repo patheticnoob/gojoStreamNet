@@ -1,4 +1,5 @@
 import { PureComponent, ForwardedRef, forwardRef } from "react";
+import { OptimizedImage } from "./OptimizedImage";
 
 type VideoItemWithHoverPureType = {
   src: string;
@@ -20,8 +21,11 @@ class VideoItemWithHoverPure extends PureComponent<VideoItemWithHoverPureType> {
           paddingTop: "calc(9 / 16 * 100%)",
         }}
       >
-        <img
+        <OptimizedImage
           src={this.props.src}
+          alt="Video thumbnail"
+          imageType="backdrop"
+          size="medium"
           style={{
             top: 0,
             height: "100%",

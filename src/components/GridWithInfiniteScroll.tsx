@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import VideoItemWithHover from "./VideoItemWithHover";
 import { CustomGenre, Genre } from "src/types/Genre";
 import { PaginatedMovieResult } from "src/types/Common";
+import { AnimeContent } from "src/types/Anime";
 import useIntersectionObserver from "src/hooks/useIntersectionObserver";
 
 interface GridWithInfiniteScrollProps {
@@ -45,11 +46,14 @@ export default function GridWithInfiniteScroll({
         <Typography
           variant="h5"
           sx={{ color: "text.primary", mb: 2 }}
-        >{`${genre.name} Movies`}</Typography>
+        >{`${genre.name} Content`}</Typography>
         <Grid container spacing={2}>
           {data.results
-            .filter((v) => !!v.backdrop_path)
-            .map((video, idx) => (
+            .filter((v: any) => {
+              // For anime content, check for poster; for movies, check for backdrop_path
+              return 'poster' in v ? !!v.poster : !!v.backdrop_path;
+            })
+            .map((video: any, idx: number) => (
               <Grid
                 key={`${video.id}_${idx}`}
                 item

@@ -1,36 +1,130 @@
 import Stack from "@mui/material/Stack";
-import { COMMON_TITLES } from "src/constant";
+import Box from "@mui/material/Box";
 import HeroSection from "src/components/HeroSection";
-import { genreSliceEndpoints, useGetGenresQuery } from "src/store/slices/genre";
-import { MEDIA_TYPE } from "src/types/Common";
-import { CustomGenre, Genre } from "src/types/Genre";
-import SliderRowForGenre from "src/components/VideoSlider";
-import store from "src/store";
+import AnimeSlider from "src/components/VideoSlider";
+import { useGetHomeQuery } from "src/store/slices/hiAnimeApi";
+import MainLoadingScreen from "src/components/MainLoadingScreen";
+import { HeroSectionSkeleton, VideoSliderSkeleton } from "src/components/skeletons";
+import ErrorMessages from "src/components/ErrorMessages";
 
 export async function loader() {
-  await store.dispatch(
-    genreSliceEndpoints.getGenres.initiate(MEDIA_TYPE.Movie)
-  );
+  // No longer need to preload genres since we're using anime API
   return null;
 }
-export function Component() {
-  const { data: genres, isSuccess } = useGetGenresQuery(MEDIA_TYPE.Movie);
 
-  if (isSuccess && genres && genres.length > 0) {
+export function Component() {
+  const { data: homeData, isLoading, error } = useGetHomeQuery();
+
+  if (isLoading) {
     return (
       <Stack spacing={2}>
-        <HeroSection mediaType={MEDIA_TYPE.Movie} />
-        {[...COMMON_TITLES, ...genres].map((genre: Genre | CustomGenre) => (
-          <SliderRowForGenre
-            key={genre.id || genre.name}
-            genre={genre}
-            mediaType={MEDIA_TYPE.Movie}
-          />
-        ))}
+        <HeroSectionSkeleton />
+        <VideoSliderSkeleton title="Trending Now" />
+        <VideoSliderSkeleton title="Top Airing" />
+        <VideoSliderSkeleton title="Most Popular" />
+        <VideoSliderSkeleton title="Most Favorite" />
+        <VideoSliderSkeleton title="Latest Episodes" />
       </Stack>
     );
   }
-  return null;
+
+  if (error || !homeData) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "50vh",
+          p: 3,
+        }}
+      >
+        <ErrorMessages 
+          error={error} 
+          context="api"
+          showDetails={import.meta.env.DEV}
+        />
+      </Box>
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      <HeroSection />
+      
+      {/* Trending Anime */}
+      {homeData.trending && homeData.trending.length > 0 && (
+        <AnimeSlider
+          title="Trending Now"
+          animes={homeData.trending}
+          exploreLink="/trending"
+        />
+      )}
+
+      {/* Top Airing */}
+      {homeData.topAiring && homeData.topAiring.length > 0 && (
+        <AnimeSlider
+          title="Top Airing"
+          animes={homeData.topAiring}
+          exploreLink="/top-airing"
+        />
+      )}
+
+      {/* Most Popular */}
+      {homeData.mostPopular && homeData.mostPopular.length > 0 && (
+        <AnimeSlider
+          title="Most Popular"
+          animes={homeData.mostPopular}
+          exploreLink="/popular"
+        />
+      )}
+
+      {/* Most Favorite */}
+      {homeData.mostFavorite && homeData.mostFavorite.length > 0 && (
+        <AnimeSlider
+          title="Most Favorite"
+          animes={homeData.mostFavorite}
+          exploreLink="/favorite"
+        />
+      )}
+
+      {/* Latest Episodes */}
+      {homeData.latestEpisodes && homeData.latestEpisodes.length > 0 && (
+        <AnimeSlider
+          title="Latest Episodes"
+          animes={homeData.latestEpisodes}
+          exploreLink="/latest"
+        />
+      )}
+
+      {/* Top 10 Today */}
+      {homeData.top10?.today && homeData.top10.today.length > 0 && (
+        <AnimeSlider
+          title="Top 10 Today"
+          animes={homeData.top10.today}
+          exploreLink="/top10/today"
+        />
+      )}
+
+      {/* Top 10 This Week */}
+      {homeData.top10?.week && homeData.top10.week.length > 0 && (
+        <AnimeSlider
+          title="Top 10 This Week"
+          animes={homeData.top10.week}
+          exploreLink="/top10/week"
+        />
+      )}
+
+      {/* Top 10 This Month */}
+      {homeData.top10?.month && homeData.top10.month.length > 0 && (
+        <AnimeSlider
+          title="Top 10 This Month"
+          animes={homeData.top10.month}
+          exploreLink="/top10/month"
+        />
+      )}
+    </Stack>
+  );
 }
 
 Component.displayName = "HomePage";

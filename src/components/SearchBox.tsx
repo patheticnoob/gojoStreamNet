@@ -1,7 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
+import { useSearchAnimeQuery } from "src/store/slices/hiAnimeApi";
+import { debounce } from "lodash";
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -33,13 +36,61 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-export default function SearchBox() {
+interface SearchBoxProps {
+  onSearchResults?: (results: any) => void;
+}
+
+export default function SearchBox({ onSearchResults }: SearchBoxProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>();
+  const navigate = useNavigate();
+
+  // Use the search API with skip to prevent automatic queries
+  const { data: searchResults, isLoading, error } = useSearchAnimeQuery(
+    { keyword: searchQuery, page: 1 },
+    { skip: !searchQuery || searchQuery.length < 2 }
+  );
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      if (query.length >= 2) {
+        setSearchQuery(query);
+      } else if (query.length === 0) {
+        setSearchQuery("");
+      }
+    }, 300),
+    []
+  );
+
+  // Handle search results callback
+  useEffect(() => {
+    if (onSearchResults && searchResults) {
+      onSearchResults(searchResults);
+    }
+  }, [searchResults, onSearchResults]);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    debouncedSearch(value);
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && searchQuery.length >= 2) {
+      // Navigate to search results page
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      searchInputRef.current?.blur();
+    }
+  };
 
   const handleClickSearchIcon = () => {
     if (!isFocused) {
       searchInputRef.current?.focus();
+    } else if (searchQuery.length >= 2) {
+      // Navigate to search results page when clicking search icon
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      searchInputRef.current?.blur();
     }
   };
 
@@ -54,7 +105,9 @@ export default function SearchBox() {
       </SearchIconWrapper>
       <StyledInputBase
         inputRef={searchInputRef}
-        placeholder="Titles, people, genres"
+        placeholder="Search anime titles, genres..."
+        onChange={handleInputChange}
+        onKeyPress={handleKeyPress}
         inputProps={{
           "aria-label": "search",
           onFocus: () => {

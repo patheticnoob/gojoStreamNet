@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 import Portal from "@mui/material/Portal";
 
-import VideoCardPortal from "./VideoCardPortal";
+// VideoCardPortal removed - using simple placeholder
 import MotionContainer from "./animate/MotionContainer";
 import {
   varZoomIn,
@@ -40,10 +40,8 @@ export default function VideoPortalContainer() {
     <>
       {hasToRender && (
         <Portal container={container.current}>
-          <VideoCardPortal
-            video={miniModalMediaData}
-            anchorElement={anchorElement}
-          />
+          {/* VideoCardPortal functionality removed during migration */}
+          <div>Portal placeholder</div>
         </Portal>
       )}
       <MotionContainer open={hasToRender} initial="initial">

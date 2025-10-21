@@ -13,8 +13,9 @@ import NetflixNavigationLink from "src/components/NetflixNavigationLink";
 import MotionContainer from "src/components/animate/MotionContainer";
 import { varFadeIn } from "src/components/animate/variants/fade/FadeIn";
 import { CustomGenre, Genre } from "src/types/Genre";
+import { AnimeContent } from "src/types/Anime";
 import { Movie } from "src/types/Movie";
-import { PaginatedMovieResult } from "src/types/Common";
+import { PaginatedAnimeResult } from "src/types/Common";
 
 const RootStyle = styled("div")(() => ({
   position: "relative",
@@ -50,7 +51,7 @@ const StyledSlider = styled(Slider)(
 );
 
 interface SlideItemProps {
-  item: Movie;
+  item: AnimeContent;
 }
 
 function SlideItem({ item }: SlideItemProps) {
@@ -62,7 +63,7 @@ function SlideItem({ item }: SlideItemProps) {
 }
 
 interface SlickSliderProps {
-  data: PaginatedMovieResult;
+  data: PaginatedAnimeResult;
   genre: Genre | CustomGenre;
   handleNext: (page: number) => void;
 }
@@ -192,7 +193,7 @@ export default function SlickSlider({ data, genre }: SlickSliderProps) {
                 theme={theme}
               >
                 {data.results
-                  .filter((i) => !!i.backdrop_path)
+                  .filter((i) => !!i.poster)
                   .map((item) => (
                     <SlideItem key={item.id} item={item} />
                   ))}

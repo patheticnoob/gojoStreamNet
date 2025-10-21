@@ -3,16 +3,14 @@ import { useLocation } from "react-router-dom";
 
 import { INITIAL_DETAIL_STATE } from "src/constant";
 import createSafeContext from "src/lib/createSafeContext";
-import { useLazyGetAppendedVideosQuery } from "src/store/slices/discover";
-import { MEDIA_TYPE } from "src/types/Common";
-import { MovieDetail } from "src/types/Movie";
+import { useGetAnimeDetailQuery, useGetAnimeEpisodesQuery } from "src/store/slices/hiAnimeApi";
+import { AnimeDetail, EpisodeList } from "src/types/Anime";
 
 interface DetailType {
-  id?: number;
-  mediaType?: MEDIA_TYPE;
+  id?: string;
 }
 export interface DetailModalConsumerProps {
-  detail: { mediaDetail?: MovieDetail } & DetailType;
+  detail: { animeDetail?: AnimeDetail; episodes?: EpisodeList } & DetailType;
   setDetailType: (newDetailType: DetailType) => void;
 }
 
@@ -26,19 +24,13 @@ export default function DetailModalProvider({
 }) {
   const location = useLocation();
   const [detail, setDetail] = useState<
-    { mediaDetail?: MovieDetail } & DetailType
+    { animeDetail?: AnimeDetail; episodes?: EpisodeList } & DetailType
   >(INITIAL_DETAIL_STATE);
 
-  const [getAppendedVideos] = useLazyGetAppendedVideosQuery();
-
   const handleChangeDetail = useCallback(
-    async (newDetailType: { mediaType?: MEDIA_TYPE; id?: number }) => {
-      if (!!newDetailType.id && newDetailType.mediaType) {
-        const response = await getAppendedVideos({
-          mediaType: newDetailType.mediaType,
-          id: newDetailType.id as number,
-        }).unwrap();
-        setDetail({ ...newDetailType, mediaDetail: response });
+    async (newDetailType: { id?: string }) => {
+      if (newDetailType.id) {
+        setDetail({ id: newDetailType.id });
       } else {
         setDetail(INITIAL_DETAIL_STATE);
       }

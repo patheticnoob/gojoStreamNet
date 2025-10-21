@@ -1,4 +1,5 @@
 import { Movie } from "src/types/Movie";
+import { AnimeContent } from "src/types/Anime";
 
 export enum MEDIA_TYPE {
   Movie = "movie",
@@ -34,3 +35,4 @@ export type PaginatedResult = {
 };
 
 export type PaginatedMovieResult = PaginatedResult & { results: Movie[] };
+export type PaginatedAnimeResult = PaginatedResult & { results: AnimeContent[] };

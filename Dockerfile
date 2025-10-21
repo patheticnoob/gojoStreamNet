@@ -4,9 +4,9 @@ COPY ./package.json .
 COPY ./yarn.lock .
 RUN yarn install
 COPY . .
-ARG TMDB_V3_API_KEY
-ENV VITE_APP_TMDB_V3_API_KEY=${TMDB_V3_API_KEY}
-ENV VITE_APP_API_ENDPOINT_URL="https://api.themoviedb.org/3"
+# Anime API endpoints are public and don't require API keys
+ENV VITE_APP_HIANIME_API_BASE_URL="https://hianime-api-jzl7.onrender.com/api/v1"
+ENV VITE_APP_YUMA_API_BASE_URL="https://yumaapi.vercel.app"
 RUN yarn build
 
 FROM nginx:stable-alpine

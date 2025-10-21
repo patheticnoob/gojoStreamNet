@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
-import { Movie } from "src/types/Movie";
+import { AnimeContent } from "src/types/Anime";
 import { usePortal } from "src/providers/PortalProvider";
-import { useGetConfigurationQuery } from "src/store/slices/configuration";
+import { getOptimizedPosterUrl } from "src/utils/imageOptimization";
 import VideoItemWithHoverPure from "./VideoItemWithHoverPure";
+
 interface VideoItemWithHoverProps {
-  video: Movie;
+  video: AnimeContent;
 }
 
 export default function VideoItemWithHover({ video }: VideoItemWithHoverProps) {
@@ -12,19 +13,22 @@ export default function VideoItemWithHover({ video }: VideoItemWithHoverProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { data: configuration } = useGetConfigurationQuery(undefined);
-
   useEffect(() => {
     if (isHovered) {
       setPortal(elementRef.current, video);
     }
   }, [isHovered]);
 
+  // Get the appropriate image source - all content is now anime content
+  const getImageSrc = () => {
+    return getOptimizedPosterUrl(video.poster, 'medium');
+  };
+
   return (
     <VideoItemWithHoverPure
       ref={elementRef}
       handleHover={setIsHovered}
-      src={`${configuration?.images.base_url}w300${video.backdrop_path}`}
+      src={getImageSrc()}
     />
   );
 }

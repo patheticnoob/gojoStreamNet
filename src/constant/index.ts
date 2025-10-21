@@ -1,7 +1,9 @@
 import { CustomGenre } from "src/types/Genre";
 
-export const API_ENDPOINT_URL = import.meta.env.VITE_APP_API_ENDPOINT_URL;
-export const TMDB_V3_API_KEY = import.meta.env.VITE_APP_TMDB_V3_API_KEY;
+// Anime API Configuration
+export const HIANIME_API_BASE_URL = "https://hianime-api-jzl7.onrender.com/api/v1";
+export const YUMA_API_BASE_URL = "https://yumaapi.vercel.app";
+export const IMAGE_OPTIMIZATION_SERVICE = "https://images.weserv.nl";
 
 export const MAIN_PATH = {
   root: "",
@@ -11,18 +13,24 @@ export const MAIN_PATH = {
 };
 
 export const ARROW_MAX_WIDTH = 60;
-export const COMMON_TITLES: CustomGenre[] = [
-  { name: "Popular", apiString: "popular" },
-  { name: "Top Rated", apiString: "top_rated" },
-  { name: "Now Playing", apiString: "now_playing" },
-  { name: "Upcoming", apiString: "upcoming" },
+// Anime content categories for homepage sections
+export const ANIME_CATEGORIES: CustomGenre[] = [
+  { name: "Trending", apiString: "trending" },
+  { name: "Top Airing", apiString: "topAiring" },
+  { name: "Most Popular", apiString: "mostPopular" },
+  { name: "Most Favorite", apiString: "mostFavorite" },
+  { name: "Latest Episodes", apiString: "latestEpisodes" },
 ];
 
-export const YOUTUBE_URL = "https://www.youtube.com/watch?v=";
+// CORS proxy for M3U8 streams (to be implemented)
+export const CORS_PROXY_URL = "/api/proxy";
 export const APP_BAR_HEIGHT = 70;
 
 export const INITIAL_DETAIL_STATE = {
   id: undefined,
-  mediaType: undefined,
-  mediaDetail: undefined,
+  animeDetail: undefined,
+  episodes: undefined,
 };
+
+// Note: Image optimization utilities have been moved to src/utils/imageOptimization.ts
+// Import from there for more comprehensive image handling functionality

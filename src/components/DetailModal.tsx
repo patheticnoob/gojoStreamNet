@@ -8,12 +8,19 @@ import Typography from "@mui/material/Typography";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import Slide from "@mui/material/Slide";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
 import { TransitionProps } from "@mui/material/transitions";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import Player from "video.js/dist/types/player";
 
 import MaxLineTypography from "./MaxLineTypography";
@@ -21,12 +28,11 @@ import PlayButton from "./PlayButton";
 import NetflixIconButton from "./NetflixIconButton";
 import AgeLimitChip from "./AgeLimitChip";
 import QualityChip from "./QualityChip";
-import { formatMinuteToReadable, getRandomNumber } from "src/utils/common";
-import SimilarVideoCard from "./SimilarVideoCard";
+import { getOptimizedPosterUrl } from "src/utils/imageOptimization";
 import { useDetailModal } from "src/providers/DetailModalProvider";
-import { useGetSimilarVideosQuery } from "src/store/slices/discover";
-import { MEDIA_TYPE } from "src/types/Common";
+import { useGetAnimeDetailQuery, useGetAnimeEpisodesQuery } from "src/store/slices/hiAnimeApi";
 import VideoJSPlayer from "./watch/VideoJSPlayer";
+import EpisodePlayer from "./watch/EpisodePlayer";
 
 const Transition = forwardRef(function Transition(
   props: TransitionProps & {
@@ -39,12 +45,17 @@ const Transition = forwardRef(function Transition(
 
 export default function DetailModal() {
   const { detail, setDetailType } = useDetailModal();
-  const { data: similarVideos } = useGetSimilarVideosQuery(
-    { mediaType: detail.mediaType ?? MEDIA_TYPE.Movie, id: detail.id ?? 0 },
+  const { data: animeDetail, isLoading: isLoadingDetail } = useGetAnimeDetailQuery(
+    detail.id!,
+    { skip: !detail.id }
+  );
+  const { data: episodes, isLoading: isLoadingEpisodes } = useGetAnimeEpisodesQuery(
+    detail.id!,
     { skip: !detail.id }
   );
   const playerRef = useRef<Player | null>(null);
   const [muted, setMuted] = useState(true);
+  const [selectedEpisode, setSelectedEpisode] = useState<string | null>(null);
 
   const handleReady = useCallback((player: Player) => {
     playerRef.current = player;
@@ -58,13 +69,17 @@ export default function DetailModal() {
     }
   }, []);
 
-  if (detail.mediaDetail) {
+  const handleEpisodeSelect = useCallback((episodeId: string) => {
+    setSelectedEpisode(episodeId);
+  }, []);
+
+  if (detail.id && animeDetail) {
     return (
       <Dialog
         fullWidth
         scroll="body"
-        maxWidth="md"
-        open={!!detail.mediaDetail}
+        maxWidth="lg"
+        open={!!animeDetail}
         id="detail_dialog"
         TransitionComponent={Transition}
       >
@@ -83,28 +98,42 @@ export default function DetailModal() {
                 width: "100%",
                 position: "relative",
                 height: "calc(9 / 16 * 100%)",
+                backgroundImage: `url(${getOptimizedPosterUrl(animeDetail.poster, 'xlarge')})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <VideoJSPlayer
-                options={{
-                  loop: true,
-                  autoplay: true,
-                  controls: false,
-                  responsive: true,
-                  fluid: true,
-                  techOrder: ["youtube"],
-                  sources: [
-                    {
-                      type: "video/youtube",
-                      src: `https://www.youtube.com/watch?v=${
-                        detail.mediaDetail?.videos.results[0]?.key ||
-                        "L3oOldViIgY"
-                      }`,
+              {selectedEpisode ? (
+                <EpisodePlayer
+                  episodeId={selectedEpisode}
+                  onReady={handleReady}
+                  autoplay={false}
+                  muted={muted}
+                />
+              ) : (
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<PlayArrowIcon />}
+                  sx={{
+                    bgcolor: "rgba(255, 255, 255, 0.9)",
+                    color: "black",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.7)",
                     },
-                  ],
-                }}
-                onReady={handleReady}
-              />
+                  }}
+                  onClick={() => {
+                    if (episodes?.episodes.length) {
+                      handleEpisodeSelect(episodes.episodes[0].id);
+                    }
+                  }}
+                >
+                  Play Episode 1
+                </Button>
+              )}
 
               <Box
                 sx={{
@@ -136,7 +165,7 @@ export default function DetailModal() {
               />
               <IconButton
                 onClick={() => {
-                  setDetailType({ mediaType: undefined, id: undefined });
+                  setDetailType({ id: undefined });
                 }}
                 sx={{
                   top: 15,
@@ -156,6 +185,34 @@ export default function DetailModal() {
               </IconButton>
               <Box
                 sx={{
+                  background: `linear-gradient(77deg,rgba(0,0,0,.6),transparent 85%)`,
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
+                  right: "26.09%",
+                  opacity: 1,
+                  position: "absolute",
+                  transition: "opacity .5s",
+                }}
+              />
+              <Box
+                sx={{
+                  backgroundColor: "transparent",
+                  backgroundImage:
+                    "linear-gradient(180deg,hsla(0,0%,8%,0) 0,hsla(0,0%,8%,.15) 15%,hsla(0,0%,8%,.35) 29%,hsla(0,0%,8%,.58) 44%,#141414 68%,#141414)",
+                  backgroundRepeat: "repeat-x",
+                  backgroundPosition: "0px top",
+                  backgroundSize: "100% 100%",
+                  bottom: 0,
+                  position: "absolute",
+                  height: "14.7vw",
+                  opacity: 1,
+                  top: "auto",
+                  width: "100%",
+                }}
+              />
+              <Box
+                sx={{
                   position: "absolute",
                   left: 0,
                   right: 0,
@@ -164,10 +221,17 @@ export default function DetailModal() {
                 }}
               >
                 <MaxLineTypography variant="h4" maxLine={1} sx={{ mb: 2 }}>
-                  {detail.mediaDetail?.title}
+                  {animeDetail.title}
                 </MaxLineTypography>
                 <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-                  <PlayButton sx={{ color: "black", py: 0 }} />
+                  <PlayButton 
+                    sx={{ color: "black", py: 0 }}
+                    onClick={() => {
+                      if (episodes?.episodes.length) {
+                        handleEpisodeSelect(episodes.episodes[0].id);
+                      }
+                    }}
+                  />
                   <NetflixIconButton>
                     <AddIcon />
                   </NetflixIconButton>
@@ -175,13 +239,15 @@ export default function DetailModal() {
                     <ThumbUpOffAltIcon />
                   </NetflixIconButton>
                   <Box flexGrow={1} />
-                  <NetflixIconButton
-                    size="large"
-                    onClick={() => handleMute(muted)}
-                    sx={{ zIndex: 2 }}
-                  >
-                    {!muted ? <VolumeUpIcon /> : <VolumeOffIcon />}
-                  </NetflixIconButton>
+                  {selectedEpisode && (
+                    <NetflixIconButton
+                      size="large"
+                      onClick={() => handleMute(muted)}
+                      sx={{ zIndex: 2 }}
+                    >
+                      {!muted ? <VolumeUpIcon /> : <VolumeOffIcon />}
+                    </NetflixIconButton>
+                  )}
                 </Stack>
 
                 <Container
@@ -189,20 +255,29 @@ export default function DetailModal() {
                     p: "0px !important",
                   }}
                 >
-                  <Grid container spacing={5} alignItems="center">
+                  <Grid container spacing={5} alignItems="flex-start">
                     <Grid item xs={12} sm={6} md={8}>
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                         <Typography
                           variant="subtitle1"
                           sx={{ color: "success.main" }}
-                        >{`${getRandomNumber(100)}% Match`}</Typography>
+                        >{`${Math.round(animeDetail.rating * 10)}% Match`}</Typography>
                         <Typography variant="body2">
-                          {detail.mediaDetail?.release_date.substring(0, 4)}
+                          {animeDetail.year}
                         </Typography>
-                        <AgeLimitChip label={`${getRandomNumber(20)}+`} />
-                        <Typography variant="subtitle2">{`${formatMinuteToReadable(
-                          getRandomNumber(180)
-                        )}`}</Typography>
+                        <Chip 
+                          label={animeDetail.status} 
+                          size="small" 
+                          sx={{ bgcolor: "rgba(255, 255, 255, 0.1)", color: "white" }}
+                        />
+                        <Typography variant="subtitle2">
+                          {animeDetail.episodes} Episodes
+                        </Typography>
+                        <Chip 
+                          label={animeDetail.type} 
+                          size="small" 
+                          sx={{ bgcolor: "rgba(255, 255, 255, 0.1)", color: "white" }}
+                        />
                         <QualityChip label="HD" />
                       </Stack>
 
@@ -211,26 +286,34 @@ export default function DetailModal() {
                         variant="body1"
                         sx={{ mt: 2 }}
                       >
-                        {detail.mediaDetail?.overview}
+                        {animeDetail.description}
                       </MaxLineTypography>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                       <Typography variant="body2" sx={{ my: 1 }}>
-                        {`Genres : ${detail.mediaDetail?.genres
-                          .map((g) => g.name)
-                          .join(", ")}`}
+                        {`Genres: ${animeDetail.genres.join(", ")}`}
                       </Typography>
                       <Typography variant="body2" sx={{ my: 1 }}>
-                        {`Available in : ${detail.mediaDetail?.spoken_languages
-                          .map((l) => l.name)
-                          .join(", ")}`}
+                        {`Rating: ${animeDetail.rating}/10`}
                       </Typography>
+                      {animeDetail.moreInfo?.aired && (
+                        <Typography variant="body2" sx={{ my: 1 }}>
+                          {`Aired: ${animeDetail.moreInfo.aired}`}
+                        </Typography>
+                      )}
+                      {animeDetail.moreInfo?.duration && (
+                        <Typography variant="body2" sx={{ my: 1 }}>
+                          {`Duration: ${animeDetail.moreInfo.duration}`}
+                        </Typography>
+                      )}
                     </Grid>
                   </Grid>
                 </Container>
               </Box>
             </Box>
-            {similarVideos && similarVideos.results.length > 0 && (
+            
+            {/* Episodes Section */}
+            {episodes && episodes.episodes.length > 0 && (
               <Container
                 sx={{
                   py: 2,
@@ -238,15 +321,59 @@ export default function DetailModal() {
                 }}
               >
                 <Typography variant="h6" sx={{ mb: 2 }}>
-                  More Like This
+                  Episodes ({episodes.totalEpisodes})
                 </Typography>
-                <Grid container spacing={2}>
-                  {similarVideos.results.map((sm) => (
-                    <Grid item xs={6} sm={4} key={sm.id}>
-                      <SimilarVideoCard video={sm} />
-                    </Grid>
-                  ))}
-                </Grid>
+                <Box
+                  sx={{
+                    maxHeight: 400,
+                    overflowY: "auto",
+                    bgcolor: "rgba(42, 42, 42, 0.6)",
+                    borderRadius: 1,
+                  }}
+                >
+                  <List dense>
+                    {episodes.episodes.map((episode) => (
+                      <ListItem key={episode.id} disablePadding>
+                        <ListItemButton
+                          selected={selectedEpisode === episode.id}
+                          onClick={() => handleEpisodeSelect(episode.id)}
+                          sx={{
+                            "&.Mui-selected": {
+                              bgcolor: "rgba(229, 9, 20, 0.2)",
+                            },
+                            "&:hover": {
+                              bgcolor: "rgba(255, 255, 255, 0.1)",
+                            },
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Stack direction="row" spacing={2} alignItems="center">
+                                <Typography variant="body2" sx={{ minWidth: 80 }}>
+                                  Episode {episode.number}
+                                </Typography>
+                                <Typography variant="body1" sx={{ flex: 1 }}>
+                                  {episode.title}
+                                </Typography>
+                                {episode.isFiller && (
+                                  <Chip 
+                                    label="Filler" 
+                                    size="small" 
+                                    sx={{ 
+                                      bgcolor: "rgba(255, 193, 7, 0.2)", 
+                                      color: "#ffc107",
+                                      fontSize: "0.7rem"
+                                    }}
+                                  />
+                                )}
+                              </Stack>
+                            }
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
               </Container>
             )}
           </Box>

@@ -6,6 +6,7 @@ import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import Player from "video.js/dist/types/player";
 
 import { getRandomNumber } from "src/utils/common";
+import { getOptimizedPosterUrl } from "src/utils/imageOptimization";
 import MaxLineTypography from "./MaxLineTypography";
 import PlayButton from "./PlayButton";
 import MoreInfoButton from "./MoreInfoButton";
@@ -13,26 +14,13 @@ import NetflixIconButton from "./NetflixIconButton";
 import MaturityRate from "./MaturityRate";
 import useOffSetTop from "src/hooks/useOffSetTop";
 import { useDetailModal } from "src/providers/DetailModalProvider";
-import { MEDIA_TYPE } from "src/types/Common";
-import {
-  useGetVideosByMediaTypeAndCustomGenreQuery,
-  useLazyGetAppendedVideosQuery,
-} from "src/store/slices/discover";
-import { Movie } from "src/types/Movie";
+import { useGetHomeQuery } from "src/store/slices/hiAnimeApi";
+import { AnimeContent } from "src/types/Anime";
 import VideoJSPlayer from "./watch/VideoJSPlayer";
 
-interface TopTrailerProps {
-  mediaType: MEDIA_TYPE;
-}
-
-export default function TopTrailer({ mediaType }: TopTrailerProps) {
-  const { data } = useGetVideosByMediaTypeAndCustomGenreQuery({
-    mediaType,
-    apiString: "popular",
-    page: 1,
-  });
-  const [getVideoDetail, { data: detail }] = useLazyGetAppendedVideosQuery();
-  const [video, setVideo] = useState<Movie | null>(null);
+export default function HeroSection() {
+  const { data: homeData, isLoading } = useGetHomeQuery();
+  const [anime, setAnime] = useState<AnimeContent | null>(null);
   const [muted, setMuted] = useState(true);
   const playerRef = useRef<Player | null>(null);
   const isOffset = useOffSetTop(window.innerWidth * 0.5625);
@@ -58,19 +46,14 @@ export default function TopTrailer({ mediaType }: TopTrailerProps) {
   }, [isOffset]);
 
   useEffect(() => {
-    if (data && data.results) {
-      const videos = data.results.filter((item) => !!item.backdrop_path);
-      setVideo(videos[getRandomNumber(videos.length)]);
+    if (homeData && homeData.spotlight && homeData.spotlight.length > 0) {
+      // Use spotlight anime for hero section, fallback to trending if spotlight is empty
+      const heroAnimes = homeData.spotlight.length > 0 ? homeData.spotlight : homeData.trending;
+      if (heroAnimes && heroAnimes.length > 0) {
+        setAnime(heroAnimes[getRandomNumber(heroAnimes.length)]);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
-
-  useEffect(() => {
-    if (video) {
-      getVideoDetail({ mediaType, id: video.id });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [video]);
+  }, [homeData]);
 
   const handleMute = useCallback((status: boolean) => {
     if (playerRef.current) {
@@ -98,7 +81,20 @@ export default function TopTrailer({ mediaType }: TopTrailerProps) {
             position: "absolute",
           }}
         >
-          {video && (
+          {isLoading ? (
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* Loading skeleton or spinner can be added here */}
+            </Box>
+          ) : anime ? (
             <>
               <Box
                 sx={{
@@ -109,28 +105,17 @@ export default function TopTrailer({ mediaType }: TopTrailerProps) {
                   position: "absolute",
                 }}
               >
-                {detail && (
-                  <VideoJSPlayer
-                    options={{
-                      loop: true,
-                      muted: true,
-                      autoplay: true,
-                      controls: false,
-                      responsive: true,
-                      fluid: true,
-                      techOrder: ["youtube"],
-                      sources: [
-                        {
-                          type: "video/youtube",
-                          src: `https://www.youtube.com/watch?v=${
-                            detail.videos.results[0]?.key || "L3oOldViIgY"
-                          }`,
-                        },
-                      ],
-                    }}
-                    onReady={handleReady}
-                  />
-                )}
+                {/* Background image instead of video for now - anime trailers will be added later */}
+                <Box
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundImage: `url(${getOptimizedPosterUrl(anime.poster, 'xlarge')})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
                 <Box
                   sx={{
                     background: `linear-gradient(77deg,rgba(0,0,0,.6),transparent 85%)`,
@@ -208,28 +193,28 @@ export default function TopTrailer({ mediaType }: TopTrailerProps) {
                     maxLine={1}
                     color="text.primary"
                   >
-                    {video.title}
+                    {anime.title}
                   </MaxLineTypography>
                   <MaxLineTypography
                     variant="h5"
                     maxLine={3}
                     color="text.primary"
                   >
-                    {video.overview}
+                    {anime.description}
                   </MaxLineTypography>
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                     <PlayButton size="large" />
                     <MoreInfoButton
                       size="large"
                       onClick={() => {
-                        setDetailType({ mediaType, id: video.id });
+                        setDetailType({ id: anime.id });
                       }}
                     />
                   </Stack>
                 </Stack>
               </Box>
             </>
-          )}
+          ) : null}
         </Box>
       </Box>
     </Box>
