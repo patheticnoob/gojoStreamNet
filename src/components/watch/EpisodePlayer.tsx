@@ -7,6 +7,7 @@ import Player from "video.js/dist/types/player";
 
 import VideoJSPlayer from "./VideoJSPlayer";
 import SubtitleControls from "./SubtitleControls";
+import StreamingDebugPanel from "./StreamingDebugPanel";
 import { useGetYumaAnimeInfoQuery, useGetStreamingDataQuery } from "src/store/slices/yumaApi";
 import { StreamingSource, SubtitleTrack } from "src/types/Anime";
 import { getCorsProxyUrl, getServiceProxyConfig } from "src/utils/corsProxy";
@@ -36,8 +37,31 @@ export default function EpisodePlayer({
   const [subtitleTracks, setSubtitleTracks] = useState<any[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
   const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleTrack | null>(null);
+  const [debugSteps, setDebugSteps] = useState<Array<{
+    id: string;
+    label: string;
+    status: 'pending' | 'loading' | 'success' | 'error' | 'info';
+    details?: string;
+    data?: any;
+  }>>([
+    { id: 'init', label: '1. Initialize Player', status: 'info', details: `Anime: ${animeId}, Episode: ${episodeNumber}` },
+    { id: 'yuma-info', label: '2. Get Yuma Anime Info', status: 'pending' },
+    { id: 'episode-mapping', label: '3. Map Episode Number to Yuma ID', status: 'pending' },
+    { id: 'streaming', label: '4. Get Streaming Data', status: 'pending' },
+    { id: 'subtitles', label: '5. Fetch Subtitles', status: 'pending' },
+    { id: 'video-setup', label: '6. Setup Video Player', status: 'pending' },
+  ]);
 
   const { retry, isRetrying } = useRetryState();
+
+  // Helper function to update debug steps
+  const updateDebugStep = useCallback((stepId: string, status: 'pending' | 'loading' | 'success' | 'error' | 'info', details?: string, data?: any) => {
+    setDebugSteps(prev => prev.map(step => 
+      step.id === stepId 
+        ? { ...step, status, details, data }
+        : step
+    ));
+  }, []);
 
   // Step 1: Get Yuma anime info to find the Yuma episode ID
   const { data: yumaAnimeInfo, isLoading: isLoadingYumaInfo, error: yumaInfoError } = useGetYumaAnimeInfoQuery(animeId);
@@ -51,20 +75,54 @@ export default function EpisodePlayer({
     { skip: !yumaEpisodeId }
   );
 
-  // Debug logging for streaming
-  console.log('🎥 EpisodePlayer Debug Info (Correct Flow):');
-  console.log('- Anime ID:', animeId);
-  console.log('- Episode Number:', episodeNumber);
-  console.log('- HiAnime Episode ID (for subtitles):', hiAnimeEpisodeId);
-  console.log('- Yuma Anime Info:', yumaAnimeInfo);
-  console.log('- Yuma Episode ID (for streaming):', yumaEpisodeId);
-  console.log('- Streaming Data:', streamingData);
-  console.log('- Loading Yuma Info:', isLoadingYumaInfo);
-  console.log('- Loading Stream:', isLoadingStream);
-  console.log('- Yuma Info Error:', yumaInfoError);
-  console.log('- Stream Error:', streamError);
-  console.log('- Selected Source:', selectedSource);
-  console.log('- Video Sources:', videoSources);
+  // Track Yuma anime info loading
+  useEffect(() => {
+    if (isLoadingYumaInfo) {
+      updateDebugStep('yuma-info', 'loading', 'Fetching anime info from Yuma API...');
+    } else if (yumaInfoError) {
+      updateDebugStep('yuma-info', 'error', `Error: ${JSON.stringify(yumaInfoError)}`, yumaInfoError);
+    } else if (yumaAnimeInfo) {
+      updateDebugStep('yuma-info', 'success', `Found ${yumaAnimeInfo.episodes?.length || 0} episodes`, {
+        totalEpisodes: yumaAnimeInfo.episodes?.length,
+        title: yumaAnimeInfo.title
+      });
+    }
+  }, [isLoadingYumaInfo, yumaInfoError, yumaAnimeInfo, updateDebugStep]);
+
+  // Track episode mapping
+  useEffect(() => {
+    if (yumaAnimeInfo?.episodes) {
+      const episode = yumaAnimeInfo.episodes.find((ep: any) => ep.number === episodeNumber);
+      if (episode?.id) {
+        updateDebugStep('episode-mapping', 'success', `Episode ${episodeNumber} → ${episode.id}`, {
+          episodeNumber,
+          yumaEpisodeId: episode.id,
+          episodeTitle: episode.title
+        });
+      } else {
+        updateDebugStep('episode-mapping', 'error', `Episode ${episodeNumber} not found in Yuma data`, {
+          episodeNumber,
+          availableEpisodes: yumaAnimeInfo.episodes.map((ep: any) => ({ number: ep.number, id: ep.id }))
+        });
+      }
+    }
+  }, [yumaAnimeInfo, episodeNumber, updateDebugStep]);
+
+  // Track streaming data loading
+  useEffect(() => {
+    if (yumaEpisodeId) {
+      if (isLoadingStream) {
+        updateDebugStep('streaming', 'loading', `Getting stream for: ${yumaEpisodeId}`);
+      } else if (streamError) {
+        updateDebugStep('streaming', 'error', `Stream error: ${JSON.stringify(streamError)}`, streamError);
+      } else if (streamingData) {
+        updateDebugStep('streaming', 'success', `Found ${streamingData.sources?.length || 0} sources`, {
+          sources: streamingData.sources?.map(s => ({ quality: s.quality, isM3U8: s.isM3U8 })),
+          subtitles: streamingData.subtitles?.length
+        });
+      }
+    }
+  }, [yumaEpisodeId, isLoadingStream, streamError, streamingData, updateDebugStep]);
 
   // Using HiAnime episode ID directly for Yuma streaming API
   console.log('🔍 Using HiAnime episode ID directly:', hiAnimeEpisodeId);
@@ -139,6 +197,7 @@ export default function EpisodePlayer({
       if (!hiAnimeEpisodeId) return;
 
       try {
+        updateDebugStep('subtitles', 'loading', 'Fetching subtitles from HiAnime...');
         console.log('📝 Fetching subtitles from HiAnime for episode:', hiAnimeEpisodeId);
         const response = await fetch(`https://hianime-api-jzl7.onrender.com/api/v1/stream?id=${encodeURIComponent(hiAnimeEpisodeId)}&type=sub&server=hd-2`);
         const data = await response.json();
@@ -155,12 +214,18 @@ export default function EpisodePlayer({
             }));
 
           console.log('📝 Processed subtitles:', subtitles);
+          updateDebugStep('subtitles', 'success', `Found ${subtitles.length} subtitle tracks`, {
+            tracks: subtitles.map((s: any) => s.label)
+          });
 
           // Merge with existing subtitles from Yuma
           setSubtitleTracks(prev => [...prev, ...subtitles]);
+        } else {
+          updateDebugStep('subtitles', 'error', 'No subtitle tracks found in response', data);
         }
       } catch (error) {
         console.error('❌ Failed to fetch subtitles:', error);
+        updateDebugStep('subtitles', 'error', `Subtitle fetch failed: ${error}`, error);
       }
     };
 
@@ -195,6 +260,7 @@ export default function EpisodePlayer({
   // Prepare video sources for Video.js
   useEffect(() => {
     if (selectedSource) {
+      updateDebugStep('video-setup', 'loading', 'Setting up video sources...');
       const proxyConfig = getServiceProxyConfig('yuma');
       const sources = [{
         type: selectedSource.isM3U8 ? "application/x-mpegURL" : "video/mp4",
@@ -203,8 +269,13 @@ export default function EpisodePlayer({
       }];
 
       setVideoSources(sources);
+      updateDebugStep('video-setup', 'success', `Video source ready: ${selectedSource.quality}`, {
+        quality: selectedSource.quality,
+        isM3U8: selectedSource.isM3U8,
+        sourceUrl: selectedSource.url
+      });
     }
-  }, [selectedSource]);
+  }, [selectedSource, updateDebugStep]);
 
   // Prepare subtitle tracks for Video.js
   useEffect(() => {
@@ -315,54 +386,59 @@ export default function EpisodePlayer({
   }
 
   return (
-    <StreamingErrorBoundary
-      onRetry={handleRetry}
-      onSelectDifferentSource={
-        streamingData?.sources && streamingData.sources.length > 1
-          ? handleSelectDifferentSource
-          : undefined
-      }
-    >
-      <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
-        <VideoJSPlayer
-          options={{
-            autoplay,
-            muted,
-            controls: true,
-            responsive: true,
-            fluid: true,
-            playbackRates: [0.5, 1, 1.25, 1.5, 2],
-            sources: videoSources,
-            tracks: subtitleTracks,
-            html5: {
-              hls: {
-                enableLowInitialPlaylist: true,
-                smoothQualityChange: true,
-                overrideNative: true,
+    <>
+      <StreamingErrorBoundary
+        onRetry={handleRetry}
+        onSelectDifferentSource={
+          streamingData?.sources && streamingData.sources.length > 1
+            ? handleSelectDifferentSource
+            : undefined
+        }
+      >
+        <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+          <VideoJSPlayer
+            options={{
+              autoplay,
+              muted,
+              controls: true,
+              responsive: true,
+              fluid: true,
+              playbackRates: [0.5, 1, 1.25, 1.5, 2],
+              sources: videoSources,
+              tracks: subtitleTracks,
+              html5: {
+                hls: {
+                  enableLowInitialPlaylist: true,
+                  smoothQualityChange: true,
+                  overrideNative: true,
+                },
               },
-            },
-          }}
-          onReady={handlePlayerReady}
-        />
-
-        {/* Subtitle Controls Overlay */}
-        {streamingData?.subtitles && streamingData.subtitles.length > 0 && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 16,
-              right: 16,
-              zIndex: 10,
             }}
-          >
-            <SubtitleControls
-              player={player}
-              subtitles={streamingData.subtitles}
-              onSubtitleChange={handleSubtitleChange}
-            />
-          </Box>
-        )}
-      </Box>
-    </StreamingErrorBoundary>
+            onReady={handlePlayerReady}
+          />
+
+          {/* Subtitle Controls Overlay */}
+          {streamingData?.subtitles && streamingData.subtitles.length > 0 && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                zIndex: 10,
+              }}
+            >
+              <SubtitleControls
+                player={player}
+                subtitles={streamingData.subtitles}
+                onSubtitleChange={handleSubtitleChange}
+              />
+            </Box>
+          )}
+        </Box>
+      </StreamingErrorBoundary>
+      
+      {/* Debug Panel */}
+      <StreamingDebugPanel steps={debugSteps} />
+    </>
   );
 }
