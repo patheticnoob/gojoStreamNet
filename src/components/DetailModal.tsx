@@ -226,11 +226,7 @@ export default function DetailModal() {
                 <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
                   <PlayButton 
                     sx={{ color: "black", py: 0 }}
-                    onClick={() => {
-                      if (episodes?.episodes.length) {
-                        handleEpisodeSelect(episodes.episodes[0].id);
-                      }
-                    }}
+                    animeId={animeDetail.id}
                   />
                   <NetflixIconButton>
                     <AddIcon />

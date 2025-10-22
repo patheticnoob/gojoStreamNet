@@ -5,6 +5,8 @@ type VideoItemWithHoverPureType = {
   src: string;
   innerRef: ForwardedRef<HTMLDivElement>;
   handleHover: (value: boolean) => void;
+  handleClick?: () => void;
+  alt?: string;
 };
 
 class VideoItemWithHoverPure extends PureComponent<VideoItemWithHoverPureType> {
@@ -20,12 +22,15 @@ class VideoItemWithHoverPure extends PureComponent<VideoItemWithHoverPureType> {
           position: "relative",
           paddingTop: "calc(9 / 16 * 100%)",
         }}
+        onClick={this.props.handleClick}
       >
         <OptimizedImage
           src={this.props.src}
-          alt="Video thumbnail"
-          imageType="backdrop"
+          alt={this.props.alt || "Anime poster"}
+          imageType="poster"
           size="medium"
+          enableFallback={true}
+          showSkeleton={true}
           style={{
             top: 0,
             height: "100%",

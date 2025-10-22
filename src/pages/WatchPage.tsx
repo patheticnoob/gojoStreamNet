@@ -1,272 +1,173 @@
-import { useState, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import Player from "video.js/dist/types/player";
-import { Box, Stack, Typography } from "@mui/material";
-import { SliderUnstyledOwnProps } from "@mui/base/SliderUnstyled";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import PauseIcon from "@mui/icons-material/Pause";
-import SkipNextIcon from "@mui/icons-material/SkipNext";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import SettingsIcon from "@mui/icons-material/Settings";
-import BrandingWatermarkOutlinedIcon from "@mui/icons-material/BrandingWatermarkOutlined";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Box, Stack, Typography, IconButton, Container } from "@mui/material";
 import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
 
-import useWindowSize from "src/hooks/useWindowSize";
-import { formatTime } from "src/utils/common";
-
-import MaxLineTypography from "src/components/MaxLineTypography";
-import VolumeControllers from "src/components/watch/VolumeControllers";
-import VideoJSPlayer from "src/components/watch/VideoJSPlayer";
-import PlayerSeekbar from "src/components/watch/PlayerSeekbar";
-import PlayerControlButton from "src/components/watch/PlayerControlButton";
+import { useGetAnimeDetailQuery, useGetAnimeEpisodesQuery } from "src/store/slices/hiAnimeApi";
+import EpisodePlayer from "src/components/watch/EpisodePlayer";
 import MainLoadingScreen from "src/components/MainLoadingScreen";
+import ErrorMessages from "src/components/ErrorMessages";
 
 export function Component() {
-  const playerRef = useRef<Player | null>(null);
-  const [playerState, setPlayerState] = useState({
-    paused: false,
-    muted: false,
-    playedSeconds: 0,
-    duration: 0,
-    volume: 0.8,
-    loaded: 0,
-  });
-
   const navigate = useNavigate();
-  const [playerInitialized, setPlayerInitialized] = useState(false);
-
-  const windowSize = useWindowSize();
-  const videoJsOptions = useMemo(() => {
-    return {
-      preload: "metadata",
-      autoplay: true,
-      controls: false,
-      // responsive: true,
-      // fluid: true,
-      width: windowSize.width,
-      height: windowSize.height,
-      sources: [
-        {
-          // src: videoData?.video,
-          // src: "https://d2zihajmogu5jn.cloudfront.net/bipbop-advanced/bipbop_16x9_variant.m3u8",
-          src: "https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-          type: "application/x-mpegurl",
-        },
-      ],
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [windowSize]);
-
-  const handlePlayerReady = function (player: Player): void {
-    player.on("pause", () => {
-      setPlayerState((draft) => {
-        return { ...draft, paused: true };
-      });
-    });
-
-    player.on("play", () => {
-      setPlayerState((draft) => {
-        return { ...draft, paused: false };
-      });
-    });
-
-    player.on("timeupdate", () => {
-      setPlayerState((draft) => {
-        return { ...draft, playedSeconds: player.currentTime() };
-      });
-    });
-
-    player.one("durationchange", () => {
-      setPlayerInitialized(true);
-      setPlayerState((draft) => ({ ...draft, duration: player.duration() }));
-    });
-
-    playerRef.current = player;
-
-    setPlayerState((draft) => {
-      return { ...draft, paused: player.paused() };
-    });
-  };
-
-  const handleVolumeChange: SliderUnstyledOwnProps["onChange"] = (_, value) => {
-    playerRef.current?.volume((value as number) / 100);
-    setPlayerState((draft) => {
-      return { ...draft, volume: (value as number) / 100 };
-    });
-  };
-
-  const handleSeekTo = (v: number) => {
-    playerRef.current?.currentTime(v);
-  };
+  const [searchParams] = useSearchParams();
+  
+  // Get anime and episode from URL parameters
+  const animeId = searchParams.get('anime');
+  const episodeNumber = parseInt(searchParams.get('episode') || '1');
+  
+  // Fetch anime details and episodes
+  const { data: animeDetail, isLoading: isLoadingDetail, error: detailError } = useGetAnimeDetailQuery(
+    animeId!,
+    { skip: !animeId }
+  );
+  
+  const { data: episodes, isLoading: isLoadingEpisodes, error: episodesError } = useGetAnimeEpisodesQuery(
+    animeId!,
+    { skip: !animeId }
+  );
+  
+  // Find the current episode
+  const currentEpisode = episodes?.episodes?.find(ep => ep.number === episodeNumber);
+  const episodeId = currentEpisode?.id;
 
   const handleGoBack = () => {
     navigate("/browse");
   };
 
-  if (!!videoJsOptions.width) {
+  // Show loading while fetching data
+  if (isLoadingDetail || isLoadingEpisodes) {
+    return <MainLoadingScreen />;
+  }
+
+  // Show error if no anime ID provided
+  if (!animeId) {
     return (
-      <Box
-        sx={{
-          position: "relative",
-        }}
-      >
-        <VideoJSPlayer options={videoJsOptions} onReady={handlePlayerReady} />
-        {playerRef.current && playerInitialized && (
-          <Box
-            sx={{
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              position: "absolute",
-            }}
-          >
-            <Box px={2} sx={{ position: "absolute", top: 75 }}>
-              <PlayerControlButton onClick={handleGoBack}>
-                <KeyboardBackspaceIcon />
-              </PlayerControlButton>
-            </Box>
-            <Box
-              px={2}
-              sx={{
-                position: "absolute",
-                top: { xs: "40%", sm: "55%", md: "60%" },
-                left: 0,
-              }}
-            >
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 700,
-                  color: "white",
-                }}
-              >
-                Title
-              </Typography>
-            </Box>
-            <Box
-              px={{ xs: 0, sm: 1, md: 2 }}
-              sx={{
-                position: "absolute",
-                top: { xs: "50%", sm: "60%", md: "70%" },
-                right: 0,
-              }}
-            >
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  px: 1,
-                  py: 0.5,
-                  fontWeight: 700,
-                  color: "white",
-                  bgcolor: "red",
-                  borderRadius: "12px 0px 0px 12px",
-                }}
-              >
-                12+
-              </Typography>
-            </Box>
-
-            <Box
-              px={{ xs: 1, sm: 2 }}
-              sx={{ position: "absolute", bottom: 20, left: 0, right: 0 }}
-            >
-              {/* Seekbar */}
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <PlayerSeekbar
-                  playedSeconds={playerState.playedSeconds}
-                  duration={playerState.duration}
-                  seekTo={handleSeekTo}
-                />
-              </Stack>
-              {/* end Seekbar */}
-
-              {/* Controller */}
-              <Stack direction="row" alignItems="center">
-                {/* left controller */}
-                <Stack
-                  direction="row"
-                  spacing={{ xs: 0.5, sm: 1.5, md: 2 }}
-                  alignItems="center"
-                >
-                  {!playerState.paused ? (
-                    <PlayerControlButton
-                      onClick={() => {
-                        playerRef.current?.pause();
-                      }}
-                    >
-                      <PauseIcon />
-                    </PlayerControlButton>
-                  ) : (
-                    <PlayerControlButton
-                      onClick={() => {
-                        playerRef.current?.play();
-                      }}
-                    >
-                      <PlayArrowIcon />
-                    </PlayerControlButton>
-                  )}
-                  <PlayerControlButton>
-                    <SkipNextIcon />
-                  </PlayerControlButton>
-                  <VolumeControllers
-                    muted={playerState.muted}
-                    handleVolumeToggle={() => {
-                      playerRef.current?.muted(!playerState.muted);
-                      setPlayerState((draft) => {
-                        return { ...draft, muted: !draft.muted };
-                      });
-                    }}
-                    value={playerState.volume}
-                    handleVolume={handleVolumeChange}
-                  />
-                  <Typography variant="caption" sx={{ color: "white" }}>
-                    {`${formatTime(playerState.playedSeconds)} / ${formatTime(
-                      playerState.duration
-                    )}`}
-                  </Typography>
-                </Stack>
-                {/* end left controller */}
-
-                {/* middle time */}
-                <Box flexGrow={1}>
-                  <MaxLineTypography
-                    maxLine={1}
-                    variant="subtitle1"
-                    textAlign="center"
-                    sx={{ maxWidth: 300, mx: "auto", color: "white" }}
-                  >
-                    Description
-                  </MaxLineTypography>
-                </Box>
-                {/* end middle time */}
-
-                {/* right controller */}
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={{ xs: 0.5, sm: 1.5, md: 2 }}
-                >
-                  <PlayerControlButton>
-                    <SettingsIcon />
-                  </PlayerControlButton>
-                  <PlayerControlButton>
-                    <BrandingWatermarkOutlinedIcon />
-                  </PlayerControlButton>
-                  <PlayerControlButton>
-                    <FullscreenIcon />
-                  </PlayerControlButton>
-                </Stack>
-                {/* end right controller */}
-              </Stack>
-              {/* end Controller */}
-            </Box>
-          </Box>
-        )}
-      </Box>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <ErrorMessages 
+          error={{ message: "No anime specified" }} 
+          context="general"
+        />
+      </Container>
     );
   }
-  return null;
+
+  // Show error if anime details failed to load
+  if (detailError || episodesError) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <ErrorMessages 
+          error={detailError || episodesError} 
+          context="api"
+          showDetails={import.meta.env.DEV}
+        />
+      </Container>
+    );
+  }
+
+  // Show error if episode not found
+  if (!episodeId && episodes) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <ErrorMessages 
+          error={{ message: `Episode ${episodeNumber} not found` }} 
+          context="general"
+        />
+      </Container>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        bgcolor: "black",
+      }}
+    >
+      {/* Back Button */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          zIndex: 1000,
+        }}
+      >
+        <IconButton
+          onClick={handleGoBack}
+          sx={{
+            color: "white",
+            bgcolor: "rgba(0, 0, 0, 0.5)",
+            "&:hover": {
+              bgcolor: "rgba(0, 0, 0, 0.7)",
+            },
+          }}
+        >
+          <KeyboardBackspaceIcon />
+        </IconButton>
+      </Box>
+
+      {/* Anime Info Overlay */}
+      {animeDetail && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 80,
+            left: 20,
+            zIndex: 1000,
+            maxWidth: 400,
+          }}
+        >
+          <Typography
+            variant="h4"
+            sx={{
+              color: "white",
+              fontWeight: "bold",
+              textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+              mb: 1,
+            }}
+          >
+            {animeDetail.title}
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: "white",
+              textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+            }}
+          >
+            Episode {episodeNumber}
+            {currentEpisode?.title && ` - ${currentEpisode.title}`}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Episode Player */}
+      {episodeId ? (
+        <EpisodePlayer
+          episodeId={episodeId}
+          autoplay={true}
+          muted={false}
+        />
+      ) : (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            color: "white",
+          }}
+        >
+          <Typography variant="h6">
+            Loading episode...
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
 }
 
 Component.displayName = "WatchPage";

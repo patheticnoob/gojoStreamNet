@@ -203,7 +203,7 @@ export default function HeroSection() {
                     {anime.description}
                   </MaxLineTypography>
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                    <PlayButton size="large" />
+                    <PlayButton size="large" animeId={anime.id} />
                     <MoreInfoButton
                       size="large"
                       onClick={() => {

@@ -3,8 +3,23 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { useNavigate } from "react-router-dom";
 import { MAIN_PATH } from "src/constant";
 
-export default function PlayButton({ sx, ...others }: ButtonProps) {
+interface PlayButtonProps extends ButtonProps {
+  animeId?: string;
+}
+
+export default function PlayButton({ sx, animeId, ...others }: PlayButtonProps) {
   const navigate = useNavigate();
+  
+  const handleClick = () => {
+    if (animeId) {
+      // Navigate to watch page with anime ID
+      navigate(`/${MAIN_PATH.watch}?anime=${animeId}&episode=1`);
+    } else {
+      // Fallback to generic watch page
+      navigate(`/${MAIN_PATH.watch}`);
+    }
+  };
+
   return (
     <Button
       color="inherit"
@@ -31,7 +46,7 @@ export default function PlayButton({ sx, ...others }: ButtonProps) {
         textTransform: "capitalize",
         ...sx,
       }}
-      onClick={() => navigate(`/${MAIN_PATH.watch}`)}
+      onClick={handleClick}
     >
       Play
     </Button>
