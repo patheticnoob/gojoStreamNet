@@ -159,12 +159,12 @@ export function getFallbackImageUrl(
 ): string {
   const dimensions = IMAGE_SIZES[imageType][size as keyof typeof IMAGE_SIZES[typeof imageType]];
   
-  // Generate a placeholder using a solid color service
-  const backgroundColor = '1a1a1a'; // Dark gray matching Netflix theme
+  // Generate a placeholder using a solid color service with better styling
+  const backgroundColor = '2d2d2d'; // Darker gray matching app theme
   const textColor = 'ffffff';
-  const text = imageType === 'poster' ? 'No Poster' : 'No Image';
+  const text = imageType === 'poster' ? 'NO+IMAGE' : 'NO+IMAGE';
   
-  return `https://via.placeholder.com/${dimensions.width}x${dimensions.height}/${backgroundColor}/${textColor}?text=${encodeURIComponent(text)}`;
+  return `https://via.placeholder.com/${dimensions.width}x${dimensions.height}/${backgroundColor}/${textColor}?text=${encodeURIComponent(text)}&font=Arial`;
 }
 
 /**
@@ -179,26 +179,33 @@ export function validateImageUrl(imageUrl: string): Promise<boolean> {
       return;
     }
 
+    // Don't validate placeholder URLs (they should always work)
+    if (imageUrl.includes('via.placeholder.com')) {
+      resolve(true);
+      return;
+    }
+
     const startTime = performance.now();
     const img = new Image();
+    let resolved = false;
     
-    img.onload = () => {
-      performanceTracker.trackImageLoad(imageUrl, startTime, true);
-      resolve(true);
+    const resolveOnce = (success: boolean) => {
+      if (!resolved) {
+        resolved = true;
+        performanceTracker.trackImageLoad(imageUrl, startTime, success);
+        resolve(success);
+      }
     };
     
-    img.onerror = () => {
-      performanceTracker.trackImageLoad(imageUrl, startTime, false);
-      resolve(false);
-    };
+    img.onload = () => resolveOnce(true);
+    img.onerror = () => resolveOnce(false);
     
+    // Set crossOrigin to handle CORS issues
+    img.crossOrigin = 'anonymous';
     img.src = imageUrl;
     
-    // Timeout after 5 seconds
-    setTimeout(() => {
-      performanceTracker.trackImageLoad(imageUrl, startTime, false);
-      resolve(false);
-    }, 5000);
+    // Timeout after 3 seconds (reduced from 5)
+    setTimeout(() => resolveOnce(false), 3000);
   });
 }
 

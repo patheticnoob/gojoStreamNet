@@ -16,6 +16,13 @@ export function Component() {
   const animeId = searchParams.get('anime');
   const episodeNumber = parseInt(searchParams.get('episode') || '1');
   
+  // Debug logging
+  console.log('🎬 WatchPage Debug Info:');
+  console.log('- Current URL:', window.location.href);
+  console.log('- Search Params:', Object.fromEntries(searchParams.entries()));
+  console.log('- Anime ID:', animeId);
+  console.log('- Episode Number:', episodeNumber);
+  
   // Fetch anime details and episodes
   const { data: animeDetail, isLoading: isLoadingDetail, error: detailError } = useGetAnimeDetailQuery(
     animeId!,
@@ -30,6 +37,17 @@ export function Component() {
   // Find the current episode
   const currentEpisode = episodes?.episodes?.find(ep => ep.number === episodeNumber);
   const episodeId = currentEpisode?.id;
+  
+  // More debug logging
+  console.log('📺 Episode Debug Info:');
+  console.log('- Anime Detail:', animeDetail);
+  console.log('- Episodes Data:', episodes);
+  console.log('- Current Episode:', currentEpisode);
+  console.log('- Episode ID:', episodeId);
+  console.log('- Loading Detail:', isLoadingDetail);
+  console.log('- Loading Episodes:', isLoadingEpisodes);
+  console.log('- Detail Error:', detailError);
+  console.log('- Episodes Error:', episodesError);
 
   const handleGoBack = () => {
     navigate("/browse");

@@ -42,10 +42,24 @@ export function useImageWithFallback(
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
 
   const loadImage = async () => {
     setIsLoading(true);
     setHasError(false);
+
+    // If we've exceeded max retries, show fallback immediately
+    if (retryCount >= MAX_RETRIES) {
+      console.warn(`Max retries (${MAX_RETRIES}) reached for image:`, originalUrl);
+      if (enableFallback) {
+        setSrc(getFallbackImageUrl(imageType, size));
+      } else {
+        setSrc('');
+        setHasError(true);
+      }
+      setIsLoading(false);
+      return;
+    }
 
     // If no URL provided, use fallback immediately
     if (!originalUrl || originalUrl.trim() === '') {
@@ -116,7 +130,11 @@ export function useImageWithFallback(
   };
 
   const retry = () => {
-    setRetryCount(prev => prev + 1);
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount(prev => prev + 1);
+    } else {
+      console.warn('Cannot retry: Max retries reached');
+    }
   };
 
   useEffect(() => {

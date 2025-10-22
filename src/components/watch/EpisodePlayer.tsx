@@ -36,6 +36,15 @@ export default function EpisodePlayer({
   const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleTrack | null>(null);
   const { retry, isRetrying } = useRetryState();
 
+  // Debug logging for streaming
+  console.log('🎥 EpisodePlayer Debug Info:');
+  console.log('- Episode ID:', episodeId);
+  console.log('- Streaming Data:', streamingData);
+  console.log('- Is Loading:', isLoading);
+  console.log('- Error:', error);
+  console.log('- Selected Source:', selectedSource);
+  console.log('- Video Sources:', videoSources);
+
   // Select the best quality source when streaming data is available
   useEffect(() => {
     if (streamingData?.sources && streamingData.sources.length > 0) {

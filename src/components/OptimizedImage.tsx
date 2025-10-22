@@ -66,7 +66,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         ...style
       }}
       onError={() => {
-        // If image fails to load, try to retry once
+        // Only retry if we haven't already had an error (prevents infinite loops)
         if (!hasError) {
           retry();
         }
