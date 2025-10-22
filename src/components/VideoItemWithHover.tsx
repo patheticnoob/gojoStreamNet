@@ -23,6 +23,7 @@ export default function VideoItemWithHover({ video }: VideoItemWithHoverProps) {
 
   // Handle click to open detail modal
   const handleClick = () => {
+    console.log('🎬 Anime card clicked:', video.id, video.title);
     setDetailType({ id: video.id });
   };
 

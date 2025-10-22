@@ -68,8 +68,11 @@ export default function EpisodePlayer({
     if (yumaAnimeInfo && yumaAnimeInfo.episodes) {
       console.log('🔍 Looking for episode', episodeNumber, 'in:', yumaAnimeInfo.episodes);
 
-      // Find the episode by number
-      const episode = yumaAnimeInfo.episodes.find((ep: any) => ep.number === episodeNumber);
+      // Find the episode by number (ensure both are numbers for comparison)
+      const episode = yumaAnimeInfo.episodes.find((ep: any) => {
+        const epNumber = typeof ep.number === 'string' ? parseInt(ep.number) : ep.number;
+        return epNumber === episodeNumber;
+      });
 
       if (episode && episode.id) {
         console.log('✅ Found Yuma episode ID:', episode.id);
@@ -79,21 +82,39 @@ export default function EpisodePlayer({
         // Try constructing the episode ID based on common patterns
         console.log('Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => ({ number: ep.number, id: ep.id })));
 
-        // According to your docs, the format should be: anime-name$episode$number
-        // Let's try to construct it based on the pattern from available episodes
+        // Try to construct episode ID based on the pattern from available episodes
         if (yumaAnimeInfo.episodes.length > 0) {
           const firstEpisode = yumaAnimeInfo.episodes[0];
           if (firstEpisode.id && firstEpisode.id.includes('$episode$')) {
             // Extract the base pattern and construct the episode ID
             const basePart = firstEpisode.id.split('$episode$')[0];
-            const constructedId = `${basePart}$episode$${episodeNumber}`;
-            console.log('🔧 Constructed episode ID based on pattern:', constructedId);
-            setYumaEpisodeId(constructedId);
+            
+            // Try to find the episode number pattern in the first episode
+            const firstEpIdParts = firstEpisode.id.split('$episode$');
+            if (firstEpIdParts.length === 2) {
+              // Use the same pattern but with our episode number
+              const constructedId = `${basePart}$episode$${episodeNumber}`;
+              console.log('🔧 Constructed episode ID based on pattern:', constructedId);
+              setYumaEpisodeId(constructedId);
+            }
           } else {
-            // Fallback construction
-            const constructedId = `${animeId}$episode$${episodeNumber}`;
-            console.log('🔧 Fallback constructed episode ID:', constructedId);
-            setYumaEpisodeId(constructedId);
+            // If no $episode$ pattern, try to find a different pattern
+            console.log('🔧 No standard pattern found, trying alternative construction');
+            
+            // Look for any episode that might match our number and use its pattern
+            const sampleEpisode = yumaAnimeInfo.episodes.find((ep: any) => ep.number === 1);
+            if (sampleEpisode && sampleEpisode.id) {
+              // Try to replace the episode number in the sample ID
+              const sampleId = sampleEpisode.id;
+              const constructedId = sampleId.replace(/\d+$/, episodeNumber.toString());
+              console.log('🔧 Constructed ID by replacing number:', constructedId);
+              setYumaEpisodeId(constructedId);
+            } else {
+              // Final fallback
+              const constructedId = `${animeId}$episode$${episodeNumber}`;
+              console.log('🔧 Final fallback constructed episode ID:', constructedId);
+              setYumaEpisodeId(constructedId);
+            }
           }
         }
       }

@@ -49,6 +49,13 @@ export default function DetailModal() {
     detail.id!,
     { skip: !detail.id }
   );
+
+  // Debug logging
+  console.log('🎭 DetailModal Debug Info:');
+  console.log('- Detail ID:', detail.id);
+  console.log('- Anime Detail:', animeDetail);
+  console.log('- Loading Detail:', isLoadingDetail);
+  console.log('- Should Open Modal:', !!(detail.id && animeDetail));
   const { data: episodes, isLoading: isLoadingEpisodes } = useGetAnimeEpisodesQuery(
     detail.id!,
     { skip: !detail.id }
@@ -73,39 +80,57 @@ export default function DetailModal() {
     setSelectedEpisode(episodeId);
   }, []);
 
-  if (detail.id && animeDetail) {
+  // Show modal if we have a detail ID (either loading or loaded)
+  if (detail.id) {
     return (
       <Dialog
         fullWidth
         scroll="body"
         maxWidth="lg"
-        open={!!animeDetail}
+        open={!!detail.id}
         id="detail_dialog"
         TransitionComponent={Transition}
       >
         <DialogContent sx={{ p: 0, bgcolor: "#181818" }}>
-          <Box
-            sx={{
-              top: 0,
-              left: 0,
-              right: 0,
-              position: "relative",
-              mb: 3,
-            }}
-          >
+          {/* Loading State */}
+          {isLoadingDetail && (
             <Box
               sx={{
-                width: "100%",
-                position: "relative",
-                height: "calc(9 / 16 * 100%)",
-                backgroundImage: `url(${getOptimizedPosterUrl(animeDetail.poster, 'xlarge')})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                height: "400px",
+                color: "white",
               }}
             >
+              <Typography variant="h6">Loading anime details...</Typography>
+            </Box>
+          )}
+          
+          {/* Content when loaded */}
+          {animeDetail && (
+            <Box
+              sx={{
+                top: 0,
+                left: 0,
+                right: 0,
+                position: "relative",
+                mb: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  width: "100%",
+                  position: "relative",
+                  height: "calc(9 / 16 * 100%)",
+                  backgroundImage: `url(${getOptimizedPosterUrl(animeDetail.poster, 'xlarge')})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
               {selectedEpisode ? (
                 (() => {
                   // Find the episode number from the episodes data
@@ -383,6 +408,7 @@ export default function DetailModal() {
               </Container>
             )}
           </Box>
+          )}
         </DialogContent>
       </Dialog>
     );
