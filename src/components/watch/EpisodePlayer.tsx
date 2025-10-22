@@ -91,29 +91,18 @@ export default function EpisodePlayer({
             // Try to find the episode number pattern in the first episode
             const firstEpIdParts = firstEpisode.id.split('$episode$');
             if (firstEpIdParts.length === 2) {
-              // Use the same pattern but with our episode number
-              const constructedId = `${basePart}$episode$${episodeNumber}`;
-              console.log('🔧 Constructed episode ID based on pattern:', constructedId);
-              setYumaEpisodeId(constructedId);
+              // Don't construct - the episode ID format uses unique IDs, not episode numbers
+              console.log('🔧 Cannot construct episode ID - uses unique IDs, not episode numbers');
+              console.log('🔧 Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => `Episode ${ep.number}: ${ep.id}`));
             }
           } else {
             // If no $episode$ pattern, try to find a different pattern
             console.log('🔧 No standard pattern found, trying alternative construction');
             
-            // Look for any episode that might match our number and use its pattern
-            const sampleEpisode = yumaAnimeInfo.episodes.find((ep: any) => ep.number === 1);
-            if (sampleEpisode && sampleEpisode.id) {
-              // Try to replace the episode number in the sample ID
-              const sampleId = sampleEpisode.id;
-              const constructedId = sampleId.replace(/\d+$/, episodeNumber.toString());
-              console.log('🔧 Constructed ID by replacing number:', constructedId);
-              setYumaEpisodeId(constructedId);
-            } else {
-              // Final fallback
-              const constructedId = `${animeId}$episode$${episodeNumber}`;
-              console.log('🔧 Final fallback constructed episode ID:', constructedId);
-              setYumaEpisodeId(constructedId);
-            }
+            // Cannot construct episode IDs as they use unique identifiers
+            console.log('🔧 Cannot construct episode ID - episode IDs are unique and not based on episode numbers');
+            console.log('🔧 Please ensure the episode exists in the Yuma API response');
+            console.log('🔧 Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => `Episode ${ep.number}: ${ep.id}`));
           }
         }
       }

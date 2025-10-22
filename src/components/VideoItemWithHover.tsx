@@ -18,12 +18,17 @@ export default function VideoItemWithHover({ video }: VideoItemWithHoverProps) {
   useEffect(() => {
     if (isHovered) {
       setPortal(elementRef.current, video);
+    } else {
+      // Clear the portal when not hovered
+      setPortal(null, null);
     }
-  }, [isHovered]);
+  }, [isHovered, setPortal, video]);
 
   // Handle click to open detail modal
   const handleClick = () => {
     console.log('🎬 Anime card clicked:', video.id, video.title);
+    // Clear hover state when opening modal to prevent stuck hover
+    setIsHovered(false);
     setDetailType({ id: video.id });
   };
 

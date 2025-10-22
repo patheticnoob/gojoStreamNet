@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useRef, useState } from "react";
+import { forwardRef, useCallback, useRef, useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Container from "@mui/material/Container";
@@ -45,7 +45,7 @@ const Transition = forwardRef(function Transition(
 
 export default function DetailModal() {
   const { detail, setDetailType } = useDetailModal();
-  const { data: animeDetail, isLoading: isLoadingDetail } = useGetAnimeDetailQuery(
+  const { data: animeDetail, isLoading: isLoadingDetail, error: detailError } = useGetAnimeDetailQuery(
     detail.id!,
     { skip: !detail.id }
   );
@@ -55,7 +55,20 @@ export default function DetailModal() {
   console.log('- Detail ID:', detail.id);
   console.log('- Anime Detail:', animeDetail);
   console.log('- Loading Detail:', isLoadingDetail);
-  console.log('- Should Open Modal:', !!(detail.id && animeDetail));
+  console.log('- Detail Error:', detailError);
+  console.log('- Should Open Modal:', !!detail.id);
+
+  // Auto-close modal if there's an error after a delay
+  useEffect(() => {
+    if (detailError && detail.id) {
+      const timer = setTimeout(() => {
+        console.log('🎭 Auto-closing modal due to error');
+        setDetailType({ id: undefined });
+      }, 3000); // Close after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [detailError, detail.id, setDetailType]);
   const { data: episodes, isLoading: isLoadingEpisodes } = useGetAnimeEpisodesQuery(
     detail.id!,
     { skip: !detail.id }
@@ -93,7 +106,7 @@ export default function DetailModal() {
       >
         <DialogContent sx={{ p: 0, bgcolor: "#181818" }}>
           {/* Loading State */}
-          {isLoadingDetail && (
+          {isLoadingDetail && !animeDetail && (
             <Box
               sx={{
                 display: "flex",
@@ -104,6 +117,36 @@ export default function DetailModal() {
               }}
             >
               <Typography variant="h6">Loading anime details...</Typography>
+            </Box>
+          )}
+          
+          {/* Error State */}
+          {!isLoadingDetail && !animeDetail && detail.id && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "400px",
+                color: "white",
+                p: 3,
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Failed to load anime details
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
+                Anime ID: {detail.id}
+              </Typography>
+              {detailError && (
+                <Typography variant="caption" sx={{ color: "error.main" }}>
+                  {JSON.stringify(detailError)}
+                </Typography>
+              )}
+              <Typography variant="caption" sx={{ color: "text.secondary", mt: 2 }}>
+                Modal will close automatically...
+              </Typography>
             </Box>
           )}
           
