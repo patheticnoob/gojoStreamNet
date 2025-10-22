@@ -1,43 +1,43 @@
-import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Box, Stack, Typography, IconButton, Container } from "@mui/material";
+import { Box, Typography, IconButton, Container } from "@mui/material";
 import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
 
 import { useGetAnimeDetailQuery, useGetAnimeEpisodesQuery } from "src/store/slices/hiAnimeApi";
 import EpisodePlayer from "src/components/watch/EpisodePlayer";
 import MainLoadingScreen from "src/components/MainLoadingScreen";
 import ErrorMessages from "src/components/ErrorMessages";
+import StreamingErrorBoundary from "src/components/StreamingErrorBoundary";
 
 export function Component() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   // Get anime and episode from URL parameters
   const animeId = searchParams.get('anime');
   const episodeNumber = parseInt(searchParams.get('episode') || '1');
-  
+
   // Debug logging
   console.log('🎬 WatchPage Debug Info:');
   console.log('- Current URL:', window.location.href);
   console.log('- Search Params:', Object.fromEntries(searchParams.entries()));
   console.log('- Anime ID:', animeId);
   console.log('- Episode Number:', episodeNumber);
-  
+
   // Fetch anime details and episodes
   const { data: animeDetail, isLoading: isLoadingDetail, error: detailError } = useGetAnimeDetailQuery(
     animeId!,
     { skip: !animeId }
   );
-  
+
   const { data: episodes, isLoading: isLoadingEpisodes, error: episodesError } = useGetAnimeEpisodesQuery(
     animeId!,
     { skip: !animeId }
   );
-  
+
   // Find the current episode
   const currentEpisode = episodes?.episodes?.find(ep => ep.number === episodeNumber);
   const episodeId = currentEpisode?.id;
-  
+
   // More debug logging
   console.log('📺 Episode Debug Info:');
   console.log('- Anime Detail:', animeDetail);
@@ -62,8 +62,8 @@ export function Component() {
   if (!animeId) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <ErrorMessages 
-          error={{ message: "No anime specified" }} 
+        <ErrorMessages
+          error={{ message: "No anime specified" }}
           context="general"
         />
       </Container>
@@ -74,8 +74,8 @@ export function Component() {
   if (detailError || episodesError) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <ErrorMessages 
-          error={detailError || episodesError} 
+        <ErrorMessages
+          error={detailError || episodesError}
           context="api"
           showDetails={import.meta.env.DEV}
         />
@@ -84,11 +84,11 @@ export function Component() {
   }
 
   // Show error if episode not found
-  if (!episodeId && episodes) {
+  if (!episodeId && episodes && !isLoadingEpisodes) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <ErrorMessages 
-          error={{ message: `Episode ${episodeNumber} not found` }} 
+        <ErrorMessages
+          error={{ message: `Episode ${episodeNumber} not found for anime "${animeDetail?.title || animeId}"` }}
           context="general"
         />
       </Container>
@@ -164,13 +164,17 @@ export function Component() {
 
       {/* Episode Player */}
       {animeId ? (
-        <EpisodePlayer
-          animeId={animeId}
-          episodeNumber={episodeNumber}
-          hiAnimeEpisodeId={episodeId}
-          autoplay={true}
-          muted={false}
-        />
+        <StreamingErrorBoundary
+          onRetry={() => window.location.reload()}
+        >
+          <EpisodePlayer
+            animeId={animeId}
+            episodeNumber={episodeNumber}
+            hiAnimeEpisodeId={episodeId}
+            autoplay={true}
+            muted={false}
+          />
+        </StreamingErrorBoundary>
       ) : (
         <Box
           sx={{
