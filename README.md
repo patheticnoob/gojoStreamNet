@@ -1,95 +1,238 @@
-<div align="center">
-  <a href="http://netflix-clone-with-tmdb-using-react-mui.vercel.app/">
-    <img src="./public/assets/netflix-logo.png" alt="Logo" width="100" height="32">
-  </a>
+# 🎌 GojoStreamNet - Anime Streaming Platform
 
-  <h3 align="center">Netflix Clone</h3>
+A modern, high-performance anime streaming platform built with React, TypeScript, and Material-UI. Features comprehensive error handling, performance optimization, and a Netflix-inspired user interface.
 
-  <p align="center">
-    <a href="https://netflix-clone-react-typescript.vercel.app/">View Demo</a>
-    ·
-    <a href="https://github.com/crazy-man22/netflix-clone-react-typescript/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/crazy-man22/netflix-clone-react-typescript/issues">Request Feature</a>
-  </p>
-</div>
+![GojoStreamNet Banner](https://via.placeholder.com/1200x400/1a1a1a/ffffff?text=GojoStreamNet+-+Anime+Streaming+Platform)
 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#prerequests">Prerequests</a>
-    </li>
-    <li>
-      <a href="#which-features-this-project-deals-with">Which features this project deals with</a>
-    </li>
-    <li><a href="#third-party-libraries-used-except-for-react-and-rtk">Third Party libraries used except for React and RTK</a></li>
-    <li>
-      <a href="#contact">Contact</a>
-    </li>
-  </ol>
-</details>
+## ✨ Features
 
-<br />
+### 🎯 Core Features
+- **Anime Streaming**: High-quality anime streaming with multiple sources
+- **Search & Discovery**: Advanced search with real-time suggestions
+- **Episode Management**: Complete episode lists with progress tracking
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Dark Theme**: Netflix-inspired dark UI with smooth animations
 
-<div align="center">
-  <img src="./public/assets/home-page.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Home Page</p>
-  <img src="./public/assets/mini-portal.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Mini Portal</p>
-  <img src="./public/assets/detail-modal.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Detail Modal</p>
-  <img src="./public/assets/grid-genre.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Grid Genre Page</p>
-  <img src="./public/assets/watch.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Watch Page with customer contol bar</p>
-</div>
+### 🚀 Performance & Reliability
+- **Comprehensive Error Handling**: Smart retry logic with user-friendly error messages
+- **Performance Monitoring**: Real-time performance metrics and optimization
+- **Skeleton Loading**: Smooth loading states for better perceived performance
+- **Intelligent Caching**: Advanced caching strategies for API responses and images
+- **Bundle Optimization**: Optimized build size with code splitting
 
-## Prerequests
+### 🎨 User Experience
+- **Smooth Animations**: Framer Motion powered transitions
+- **Image Optimization**: WebP format with fallbacks and lazy loading
+- **Video Player**: Custom video player with subtitle support
+- **Infinite Scroll**: Seamless content discovery
+- **Keyboard Navigation**: Full keyboard accessibility
 
-- Create an account if you don't have on [TMDB](https://www.themoviedb.org/).
-  Because I use its free API to consume movie/tv data.
-- And then follow the [documentation](https://developers.themoviedb.org/3/getting-started/introduction) to create API Key
-- Finally, if you use v3 of TMDB API, create a file named `.env`, and copy and paste the content of `.env.example`.
-  And then paste the API Key you just created.
+## 🛠️ Tech Stack
 
-## Which features this project deal with
+### Frontend
+- **React 18** - Modern React with hooks and concurrent features
+- **TypeScript** - Type-safe development
+- **Material-UI (MUI)** - Component library with custom theming
+- **Redux Toolkit** - State management with RTK Query
+- **Framer Motion** - Smooth animations and transitions
+- **React Router** - Client-side routing
 
-- How to create and use [Custom Hooks](https://reactjs.org/docs/hooks-custom.html)
-- How to use [Context](https://reactjs.org/docs/context.html) and its provider
-- How to use lazy and Suspense for [Code-Splitting](https://reactjs.org/docs/code-splitting.html)
-- How to use a new [lazy](https://reactrouter.com/en/main/route/lazy) feature of react-router to reduce bundle size.
-- How to use data [loader](https://reactrouter.com/en/main/route/loader) of react-router, and how to use redux dispatch in the loader to fetch data before rendering component.
-- How to use [Portal](https://reactjs.org/docs/portals.html)
-- How to use [Fowarding Refs](https://reactjs.org/docs/forwarding-refs.html) to make components reusuable
-- How to create and use [HOC](https://reactjs.org/docs/higher-order-components.html)
-- How to customize default theme of [MUI](https://mui.com/)
-- How to use [RTK](https://redux-toolkit.js.org/introduction/getting-started)
-- How to use [RTK Query](https://redux-toolkit.js.org/rtk-query/overview)
-- How to customize default classname of [MUI](https://mui.com/material-ui/experimental-api/classname-generator)
-- Infinite Scrolling(using [Intersection Observer API](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API))
-- How to make awesome carousel using [slick-carousel](https://react-slick.neostack.com)
+### APIs & Data
+- **HiAnime API** - Anime metadata and information
+- **Yuma API** - Streaming sources and episode data
+- **Image Optimization** - WebP conversion and CDN integration
 
-## Third Party libraries used except for React and RTK
+### Development & Build
+- **Vite** - Fast build tool and development server
+- **ESLint & Prettier** - Code quality and formatting
+- **Vitest** - Unit and integration testing
+- **Docker** - Containerized deployment
 
-- [react-router-dom@v6.9](https://reactrouter.com/en/main)
-- [MUI(Material UI)](https://mui.com/)
-- [framer-motion](https://www.framer.com/docs/)
-- [video.js](https://videojs.com)
-- [react-slick](https://react-slick.neostack.com/)
+## 🚀 Quick Start
 
-## Install with Docker
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
-```sh
-docker build --build-arg TMDB_V3_API_KEY=your_api_key_here -t netflix-clone .
+### Installation
 
-docker run --name netflix-clone-website --rm -d -p 80:80 netflix-clone
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/patheticnoob/gojoStreamNet.git
+   cd gojoStreamNet
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` with your configuration:
+   ```env
+   VITE_APP_TITLE=GojoStreamNet
+   VITE_HIANIME_API_URL=https://hianime-api-jzl7.onrender.com/api/v1
+   VITE_YUMA_API_URL=https://yumaapi.vercel.app
+   VITE_IMAGE_OPTIMIZATION_SERVICE=https://images.weserv.nl
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+## 📦 Build & Deploy
+
+### Local Build
+```bash
+npm run build
+npm run preview
 ```
 
-## Todo
+### Docker Deployment
+```bash
+docker build -t gojostreamnet .
+docker run -p 3000:3000 gojostreamnet
+```
 
-- Make the animation of video card portal more similar to Netflix.
-- Improve performance. I am using `context` and `provider` but all components subscribed to the context's value are re-rendered. These re-renders happen even if the part of the value is not used in render of the component. there are [several ways](https://blog.axlight.com/posts/4-options-to-prevent-extra-rerenders-with-react-context/) to prevent the re-renders from these behaviours. In addition to them, there may be several performance issues.
-- Replace bundler([Vite](https://vitejs.dev/guide)) with [Turbopack](https://turbo.build/pack/docs/why-turbopack). Turbopack is introduced in Next.js conf recently. It's very fast but it's nor ready to use right now. it just support Next.js, and they plan to support all others as soon as possible. so if it's ready to use, replace [Vite](https://vitejs.dev/guide) with [Turbopack](https://turbo.build/pack/docs/why-turbopack).
-- Add accessibilities for better UX.
-- Add Tests.
+### Vercel Deployment
+This project is optimized for Vercel deployment:
+
+1. **Connect your GitHub repository to Vercel**
+2. **Set environment variables in Vercel dashboard**
+3. **Deploy automatically on push to main branch**
+
+The project includes:
+- `vercel.json` - Vercel configuration
+- Optimized build settings
+- Static file handling
+- SPA routing configuration
+
+## 🏗️ Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── skeletons/      # Loading skeleton components
+│   ├── watch/          # Video player components
+│   └── __tests__/      # Component tests
+├── hooks/              # Custom React hooks
+├── layouts/            # Page layout components
+├── pages/              # Route components
+├── providers/          # Context providers
+├── store/              # Redux store and slices
+│   └── slices/         # RTK Query API slices
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions and helpers
+│   └── __tests__/      # Utility tests
+└── theme/              # MUI theme configuration
+```
+
+## 🎯 Key Components
+
+### Error Handling
+- **ErrorBoundary**: Catches and handles React errors
+- **ApiErrorBoundary**: Specialized for API failures
+- **StreamingErrorBoundary**: Video streaming error handling
+- **Retry Logic**: Exponential backoff for failed requests
+
+### Performance Optimization
+- **Performance Monitor**: Real-time metrics dashboard (dev only)
+- **Image Optimization**: WebP conversion and lazy loading
+- **Caching Strategies**: Intelligent API response caching
+- **Bundle Splitting**: Optimized code splitting
+
+### Streaming Features
+- **Episode Player**: Custom video player with HLS support
+- **Subtitle Controls**: Multi-language subtitle support
+- **Quality Selection**: Adaptive streaming quality
+- **Progress Tracking**: Episode watch progress
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
+```
+
+## 📊 Performance Metrics
+
+The application includes built-in performance monitoring:
+
+- **API Response Times**: Track and optimize API calls
+- **Image Loading**: Monitor image optimization effectiveness
+- **Memory Usage**: Detect and prevent memory leaks
+- **Bundle Size**: Track and optimize build size
+
+## 🔧 Configuration
+
+### Environment Variables
+- `VITE_APP_TITLE` - Application title
+- `VITE_HIANIME_API_URL` - HiAnime API endpoint
+- `VITE_YUMA_API_URL` - Yuma streaming API endpoint
+- `VITE_IMAGE_OPTIMIZATION_SERVICE` - Image optimization service URL
+
+### Build Configuration
+- **Vite Config**: Optimized for production builds
+- **TypeScript**: Strict type checking enabled
+- **ESLint**: Code quality rules
+- **Prettier**: Code formatting
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Write tests for new features
+- Use conventional commit messages
+- Ensure all tests pass before submitting PR
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **HiAnime API** - Anime metadata and information
+- **Yuma API** - Streaming sources and episode data
+- **Material-UI** - Component library and design system
+- **React Community** - Amazing ecosystem and tools
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](https://github.com/patheticnoob/gojoStreamNet/issues) page
+2. Create a new issue with detailed information
+3. Join our community discussions
+
+---
+
+<div align="center">
+  <p>Made with ❤️ for anime lovers</p>
+  <p>
+    <a href="https://github.com/patheticnoob/gojoStreamNet">⭐ Star this repo</a> •
+    <a href="https://github.com/patheticnoob/gojoStreamNet/issues">🐛 Report Bug</a> •
+    <a href="https://github.com/patheticnoob/gojoStreamNet/issues">💡 Request Feature</a>
+  </p>
+</div>
