@@ -1,3 +1,4 @@
+import React from "react";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import HeroSection from "src/components/HeroSection";
@@ -15,6 +16,19 @@ export async function loader() {
 export function Component() {
   const { data: homeData, isLoading, error } = useGetHomeQuery();
 
+  // Debug logging
+  console.log('HomePage - Loading:', isLoading);
+  console.log('HomePage - Error:', error);
+  console.log('HomePage - Data:', homeData);
+
+  // Test API directly
+  React.useEffect(() => {
+    fetch('https://hianime-api-jzl7.onrender.com/api/v1/home')
+      .then(res => res.json())
+      .then(data => console.log('Direct API test:', data))
+      .catch(err => console.error('Direct API error:', err));
+  }, []);
+
   if (isLoading) {
     return (
       <Stack spacing={2}>
@@ -30,21 +44,42 @@ export function Component() {
 
   if (error || !homeData) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "50vh",
-          p: 3,
-        }}
-      >
-        <ErrorMessages 
-          error={error} 
-          context="api"
-          showDetails={import.meta.env.DEV}
-        />
-      </Box>
+      <Stack spacing={2}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "50vh",
+            p: 3,
+          }}
+        >
+          <ErrorMessages 
+            error={error} 
+            context="api"
+            showDetails={import.meta.env.DEV}
+          />
+        </Box>
+        
+        {/* Show basic hero section even on error */}
+        <Box
+          sx={{
+            height: "70vh",
+            background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            textAlign: "center",
+          }}
+        >
+          <Stack spacing={2}>
+            <h1>GojoStreamNet</h1>
+            <p>Anime Streaming Platform</p>
+            <p>Loading anime content...</p>
+          </Stack>
+        </Box>
+      </Stack>
     );
   }
 
