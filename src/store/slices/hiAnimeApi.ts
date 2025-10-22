@@ -16,33 +16,33 @@ import { CACHE_TIMES, KEEP_UNUSED_DATA_FOR, CACHE_TAGS } from "src/utils/cacheCo
 import performanceTracker from "src/utils/performanceTesting";
 
 // Data transformation utilities
-const transformAnimeContent = (rawAnime: HiAnimeRawAnime): AnimeContent => ({
+const transformAnimeContent = (rawAnime: any): AnimeContent => ({
   id: rawAnime.id,
-  title: rawAnime.name,
+  title: rawAnime.title || rawAnime.name,
   poster: rawAnime.poster,
-  description: rawAnime.description || "",
+  description: rawAnime.synopsis || rawAnime.description || "",
   genres: rawAnime.genres || [],
   rating: parseFloat(rawAnime.rating || "0"),
-  year: rawAnime.releaseDate ? new Date(rawAnime.releaseDate).getFullYear() : 0,
+  year: rawAnime.aired ? new Date(rawAnime.aired).getFullYear() : (rawAnime.releaseDate ? new Date(rawAnime.releaseDate).getFullYear() : 0),
   status: rawAnime.status || "Unknown",
-  episodes: rawAnime.totalEpisodes || 0,
+  episodes: rawAnime.episodes || rawAnime.totalEpisodes || 0,
   type: rawAnime.type || "TV",
   otherInfo: rawAnime.otherInfo,
 });
 
-const transformHomePageData = (response: HiAnimeHomeResponse): HomePageData => ({
-  spotlight: response.spotlight?.map(transformAnimeContent) || [],
-  trending: response.trending?.map(transformAnimeContent) || [],
-  topAiring: response.topAiring?.map(transformAnimeContent) || [],
-  mostPopular: response.mostPopular?.map(transformAnimeContent) || [],
-  mostFavorite: response.mostFavorite?.map(transformAnimeContent) || [],
-  latestEpisodes: response.latestEpisodes?.map(transformAnimeContent) || [],
+const transformHomePageData = (response: any): HomePageData => ({
+  spotlight: response.data?.spotlight?.map(transformAnimeContent) || [],
+  trending: response.data?.trending?.map(transformAnimeContent) || [],
+  topAiring: response.data?.topAiring?.map(transformAnimeContent) || [],
+  mostPopular: response.data?.mostPopular?.map(transformAnimeContent) || [],
+  mostFavorite: response.data?.mostFavorite?.map(transformAnimeContent) || [],
+  latestEpisodes: response.data?.latestEpisode?.map(transformAnimeContent) || [],
   top10: {
-    today: response.top10?.today?.map(transformAnimeContent) || [],
-    week: response.top10?.week?.map(transformAnimeContent) || [],
-    month: response.top10?.month?.map(transformAnimeContent) || [],
+    today: response.data?.top10?.today?.map(transformAnimeContent) || [],
+    week: response.data?.top10?.week?.map(transformAnimeContent) || [],
+    month: response.data?.top10?.month?.map(transformAnimeContent) || [],
   },
-  genres: response.genres || [],
+  genres: response.data?.genres || [],
 });
 
 // Enhanced base query with retry logic, error handling, and performance tracking
@@ -101,11 +101,11 @@ export const hiAnimeApi = createApi({
     >({
       query: ({ keyword, page = 1 }) =>
         `/search?keyword=${encodeURIComponent(keyword)}&page=${page}`,
-      transformResponse: (response: HiAnimeSearchResponse): SearchResult => ({
-        animes: response.animes.map(transformAnimeContent),
-        totalPages: response.totalPages,
-        currentPage: response.currentPage,
-        hasNextPage: response.hasNextPage,
+      transformResponse: (response: any): SearchResult => ({
+        animes: response.data?.animes?.map(transformAnimeContent) || [],
+        totalPages: response.data?.totalPages || 1,
+        currentPage: response.data?.currentPage || 1,
+        hasNextPage: response.data?.hasNextPage || false,
       }),
       providesTags: (result, error, { keyword, page = 1 }) => [
         { type: CACHE_TAGS.SEARCH, id: `${keyword}_${page}` }
@@ -115,21 +115,19 @@ export const hiAnimeApi = createApi({
     // Get detailed anime information
     getAnimeDetail: build.query<AnimeDetail, string>({
       query: (animeId) => `/anime/${animeId}`,
-      transformResponse: (response: HiAnimeDetailResponse): AnimeDetail => ({
-        id: response.anime.id,
-        title: response.anime.name,
-        poster: response.anime.poster,
-        description: response.anime.description,
-        genres: response.anime.genres,
-        rating: parseFloat(response.anime.rating || "0"),
-        year: response.anime.releaseDate
-          ? new Date(response.anime.releaseDate).getFullYear()
-          : 0,
-        status: response.anime.status,
-        episodes: response.anime.totalEpisodes,
-        type: response.anime.type,
-        otherInfo: response.anime.otherInfo,
-        moreInfo: response.anime.moreInfo,
+      transformResponse: (response: any): AnimeDetail => ({
+        id: response.data?.anime?.id || response.data?.id,
+        title: response.data?.anime?.title || response.data?.anime?.name || response.data?.title,
+        poster: response.data?.anime?.poster || response.data?.poster,
+        description: response.data?.anime?.synopsis || response.data?.anime?.description || response.data?.synopsis || "",
+        genres: response.data?.anime?.genres || response.data?.genres || [],
+        rating: parseFloat(response.data?.anime?.rating || response.data?.rating || "0"),
+        year: response.data?.anime?.aired ? new Date(response.data.anime.aired).getFullYear() : 0,
+        status: response.data?.anime?.status || response.data?.status || "Unknown",
+        episodes: response.data?.anime?.episodes || response.data?.anime?.totalEpisodes || response.data?.episodes || 0,
+        type: response.data?.anime?.type || response.data?.type || "TV",
+        otherInfo: response.data?.anime?.otherInfo || response.data?.otherInfo,
+        moreInfo: response.data?.anime?.moreInfo || response.data?.moreInfo,
       }),
       providesTags: (result, error, animeId) => [
         { type: CACHE_TAGS.ANIME_DETAIL, id: animeId },
@@ -140,14 +138,14 @@ export const hiAnimeApi = createApi({
     // Get episode list for an anime
     getAnimeEpisodes: build.query<EpisodeList, string>({
       query: (animeId) => `/episodes/${animeId}`,
-      transformResponse: (response: HiAnimeEpisodesResponse): EpisodeList => ({
-        episodes: response.episodes.map((ep) => ({
+      transformResponse: (response: any): EpisodeList => ({
+        episodes: response.data?.episodes?.map((ep: any) => ({
           id: ep.id,
           number: ep.number,
           title: ep.title,
           isFiller: ep.isFiller,
-        })),
-        totalEpisodes: response.totalEpisodes,
+        })) || [],
+        totalEpisodes: response.data?.totalEpisodes || 0,
       }),
       providesTags: (result, error, animeId) => [
         { type: CACHE_TAGS.EPISODES, id: animeId },

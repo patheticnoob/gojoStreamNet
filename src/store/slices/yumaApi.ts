@@ -27,19 +27,27 @@ export const yumaApi = createApi({
     // Get streaming data for an episode
     getStreamingData: build.query<StreamingData, string>({
       query: (episodeId) => `/stream?id=${encodeURIComponent(episodeId)}`,
-      transformResponse: (response: YumaStreamResponse): StreamingData => ({
-        sources: response.sources.map((source) => ({
+      transformResponse: (response: any): StreamingData => ({
+        sources: response.data?.sources?.map((source: any) => ({
           url: source.url,
           quality: source.quality,
           isM3U8: source.isM3U8,
-        })),
-        subtitles: response.subtitles.map((subtitle) => ({
+        })) || response.sources?.map((source: any) => ({
+          url: source.url,
+          quality: source.quality,
+          isM3U8: source.isM3U8,
+        })) || [],
+        subtitles: response.data?.subtitles?.map((subtitle: any) => ({
           label: subtitle.label,
           src: subtitle.src,
           default: subtitle.default,
-        })),
-        intro: response.intro,
-        outro: response.outro,
+        })) || response.subtitles?.map((subtitle: any) => ({
+          label: subtitle.label,
+          src: subtitle.src,
+          default: subtitle.default,
+        })) || [],
+        intro: response.data?.intro || response.intro,
+        outro: response.data?.outro || response.outro,
       }),
       providesTags: (result, error, episodeId) => [
         { type: CACHE_TAGS.STREAM, id: episodeId },
@@ -50,12 +58,12 @@ export const yumaApi = createApi({
     // Get episode information
     getEpisodeInfo: build.query<EpisodeInfo, string>({
       query: (episodeId) => `/info?id=${encodeURIComponent(episodeId)}`,
-      transformResponse: (response: YumaInfoResponse): EpisodeInfo => ({
-        id: response.id,
-        title: response.title,
-        number: response.number,
-        description: response.description,
-        thumbnail: response.thumbnail,
+      transformResponse: (response: any): EpisodeInfo => ({
+        id: response.data?.id || response.id,
+        title: response.data?.title || response.title,
+        number: response.data?.number || response.number,
+        description: response.data?.description || response.description || "",
+        thumbnail: response.data?.thumbnail || response.thumbnail,
       }),
       providesTags: (result, error, episodeId) => [
         { type: CACHE_TAGS.EPISODE_INFO, id: episodeId },
