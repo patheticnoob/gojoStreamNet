@@ -7,7 +7,7 @@ import Player from "video.js/dist/types/player";
 
 import VideoJSPlayer from "./VideoJSPlayer";
 import SubtitleControls from "./SubtitleControls";
-import { useGetYumaAnimeInfoQuery, useGetStreamingDataQuery } from "src/store/slices/yumaApi";
+import { useGetStreamingDataQuery } from "src/store/slices/yumaApi";
 import { StreamingSource, SubtitleTrack } from "src/types/Anime";
 import { getCorsProxyUrl, getServiceProxyConfig } from "src/utils/corsProxy";
 import StreamingErrorBoundary from "src/components/StreamingErrorBoundary";
@@ -36,78 +36,29 @@ export default function EpisodePlayer({
   const [subtitleTracks, setSubtitleTracks] = useState<any[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
   const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleTrack | null>(null);
-  const [yumaEpisodeId, setYumaEpisodeId] = useState<string | null>(null);
+
   const { retry, isRetrying } = useRetryState();
 
-  // Step 1: Get Yuma anime info to find the correct episode ID
-  const { data: yumaAnimeInfo, isLoading: isLoadingYumaInfo, error: yumaInfoError } = useGetYumaAnimeInfoQuery(animeId);
-
-  // Step 2: Get streaming data using the Yuma episode ID
+  // Use HiAnime episode ID directly for Yuma streaming API
   const { data: streamingData, isLoading: isLoadingStream, error: streamError, refetch } = useGetStreamingDataQuery(
-    { episodeId: yumaEpisodeId!, type: "sub" },
-    { skip: !yumaEpisodeId }
+    { episodeId: hiAnimeEpisodeId!, type: "sub" },
+    { skip: !hiAnimeEpisodeId }
   );
 
   // Debug logging for streaming
   console.log('🎥 EpisodePlayer Debug Info:');
   console.log('- Anime ID:', animeId);
   console.log('- Episode Number:', episodeNumber);
-  console.log('- Yuma Anime Info:', yumaAnimeInfo);
-  console.log('- Yuma Episode ID:', yumaEpisodeId);
+  console.log('- HiAnime Episode ID:', hiAnimeEpisodeId);
   console.log('- Streaming Data:', streamingData);
-  console.log('- Loading Yuma Info:', isLoadingYumaInfo);
   console.log('- Loading Stream:', isLoadingStream);
-  console.log('- Yuma Info Error:', yumaInfoError);
+  console.log('- Stream Error:', streamError);
   console.log('- Stream Error:', streamError);
   console.log('- Selected Source:', selectedSource);
   console.log('- Video Sources:', videoSources);
 
-  // Extract Yuma episode ID from the anime info
-  useEffect(() => {
-    if (yumaAnimeInfo && yumaAnimeInfo.episodes) {
-      console.log('🔍 Looking for episode', episodeNumber, 'in:', yumaAnimeInfo.episodes);
-
-      // Find the episode by number (ensure both are numbers for comparison)
-      const episode = yumaAnimeInfo.episodes.find((ep: any) => {
-        const epNumber = typeof ep.number === 'string' ? parseInt(ep.number) : ep.number;
-        return epNumber === episodeNumber;
-      });
-
-      if (episode && episode.id) {
-        console.log('✅ Found Yuma episode ID:', episode.id);
-        setYumaEpisodeId(episode.id);
-      } else {
-        console.error('❌ Episode not found in Yuma data for episode number:', episodeNumber);
-        // Try constructing the episode ID based on common patterns
-        console.log('Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => ({ number: ep.number, id: ep.id })));
-
-        // Try to construct episode ID based on the pattern from available episodes
-        if (yumaAnimeInfo.episodes.length > 0) {
-          const firstEpisode = yumaAnimeInfo.episodes[0];
-          if (firstEpisode.id && firstEpisode.id.includes('$episode$')) {
-            // Extract the base pattern and construct the episode ID
-            const basePart = firstEpisode.id.split('$episode$')[0];
-            
-            // Try to find the episode number pattern in the first episode
-            const firstEpIdParts = firstEpisode.id.split('$episode$');
-            if (firstEpIdParts.length === 2) {
-              // Don't construct - the episode ID format uses unique IDs, not episode numbers
-              console.log('🔧 Cannot construct episode ID - uses unique IDs, not episode numbers');
-              console.log('🔧 Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => `Episode ${ep.number}: ${ep.id}`));
-            }
-          } else {
-            // If no $episode$ pattern, try to find a different pattern
-            console.log('🔧 No standard pattern found, trying alternative construction');
-            
-            // Cannot construct episode IDs as they use unique identifiers
-            console.log('🔧 Cannot construct episode ID - episode IDs are unique and not based on episode numbers');
-            console.log('🔧 Please ensure the episode exists in the Yuma API response');
-            console.log('🔧 Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => `Episode ${ep.number}: ${ep.id}`));
-          }
-        }
-      }
-    }
-  }, [yumaAnimeInfo, episodeNumber, animeId]);
+  // Using HiAnime episode ID directly for Yuma streaming API
+  console.log('🔍 Using HiAnime episode ID directly:', hiAnimeEpisodeId);
 
   // Fetch subtitles from HiAnime API (parallel to Yuma stream)
   // Note: According to your docs, we should use the HiAnime episode ID for subtitles, not Yuma ID
@@ -247,8 +198,8 @@ export default function EpisodePlayer({
     }
   }, [streamingData, selectedSource]);
 
-  const isLoading = isLoadingYumaInfo || isLoadingStream;
-  const error = yumaInfoError || streamError;
+  const isLoading = isLoadingStream;
+  const error = streamError;
 
   if (isLoading || isRetrying) {
     return (
@@ -263,7 +214,7 @@ export default function EpisodePlayer({
       >
         <CircularProgress />
         <Typography variant="body2" sx={{ ml: 2 }}>
-          {isRetrying ? "Retrying..." : isLoadingYumaInfo ? "Finding episode..." : "Loading stream..."}
+          {isRetrying ? "Retrying..." : "Loading stream..."}
         </Typography>
       </Box>
     );
