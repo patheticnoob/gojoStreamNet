@@ -107,12 +107,22 @@ export default function DetailModal() {
               }}
             >
               {selectedEpisode ? (
-                <EpisodePlayer
-                  episodeId={selectedEpisode}
-                  onReady={handleReady}
-                  autoplay={false}
-                  muted={muted}
-                />
+                (() => {
+                  // Find the episode number from the episodes data
+                  const episode = episodes?.episodes?.find(ep => ep.id === selectedEpisode);
+                  const episodeNumber = episode?.number || 1;
+                  
+                  return (
+                    <EpisodePlayer
+                      animeId={detail.id!}
+                      episodeNumber={episodeNumber}
+                      hiAnimeEpisodeId={selectedEpisode}
+                      onReady={handleReady}
+                      autoplay={false}
+                      muted={muted}
+                    />
+                  );
+                })()
               ) : (
                 <Button
                   variant="contained"

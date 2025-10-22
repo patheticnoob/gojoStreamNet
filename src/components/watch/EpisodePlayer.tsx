@@ -8,7 +8,7 @@ import Player from "video.js/dist/types/player";
 
 import VideoJSPlayer from "./VideoJSPlayer";
 import SubtitleControls from "./SubtitleControls";
-import { useGetStreamingDataQuery } from "src/store/slices/yumaApi";
+import { useGetYumaAnimeInfoQuery, useGetStreamingDataQuery } from "src/store/slices/yumaApi";
 import { StreamingSource, SubtitleTrack } from "src/types/Anime";
 import { getCorsProxyUrl, getServiceProxyConfig } from "src/utils/corsProxy";
 import StreamingErrorBoundary from "src/components/StreamingErrorBoundary";
@@ -16,34 +16,124 @@ import ErrorMessages from "src/components/ErrorMessages";
 import { useRetryState } from "src/utils/retryLogic";
 
 interface EpisodePlayerProps {
-  episodeId: string;
+  animeId: string;
+  episodeNumber: number;
+  hiAnimeEpisodeId?: string; // For subtitle fetching
   onReady?: (player: Player) => void;
   autoplay?: boolean;
   muted?: boolean;
 }
 
 export default function EpisodePlayer({
-  episodeId,
+  animeId,
+  episodeNumber,
+  hiAnimeEpisodeId,
   onReady,
   autoplay = false,
   muted = true,
 }: EpisodePlayerProps) {
-  const { data: streamingData, isLoading, error, refetch } = useGetStreamingDataQuery(episodeId);
   const [selectedSource, setSelectedSource] = useState<StreamingSource | null>(null);
   const [videoSources, setVideoSources] = useState<any[]>([]);
   const [subtitleTracks, setSubtitleTracks] = useState<any[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
   const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleTrack | null>(null);
+  const [yumaEpisodeId, setYumaEpisodeId] = useState<string | null>(null);
   const { retry, isRetrying } = useRetryState();
+
+  // Step 1: Get Yuma anime info to find the correct episode ID
+  const { data: yumaAnimeInfo, isLoading: isLoadingYumaInfo, error: yumaInfoError } = useGetYumaAnimeInfoQuery(animeId);
+
+  // Step 2: Get streaming data using the Yuma episode ID
+  const { data: streamingData, isLoading: isLoadingStream, error: streamError, refetch } = useGetStreamingDataQuery(
+    { episodeId: yumaEpisodeId!, type: "sub" },
+    { skip: !yumaEpisodeId }
+  );
 
   // Debug logging for streaming
   console.log('🎥 EpisodePlayer Debug Info:');
-  console.log('- Episode ID:', episodeId);
+  console.log('- Anime ID:', animeId);
+  console.log('- Episode Number:', episodeNumber);
+  console.log('- Yuma Anime Info:', yumaAnimeInfo);
+  console.log('- Yuma Episode ID:', yumaEpisodeId);
   console.log('- Streaming Data:', streamingData);
-  console.log('- Is Loading:', isLoading);
-  console.log('- Error:', error);
+  console.log('- Loading Yuma Info:', isLoadingYumaInfo);
+  console.log('- Loading Stream:', isLoadingStream);
+  console.log('- Yuma Info Error:', yumaInfoError);
+  console.log('- Stream Error:', streamError);
   console.log('- Selected Source:', selectedSource);
   console.log('- Video Sources:', videoSources);
+
+  // Extract Yuma episode ID from the anime info
+  useEffect(() => {
+    if (yumaAnimeInfo && yumaAnimeInfo.episodes) {
+      console.log('🔍 Looking for episode', episodeNumber, 'in:', yumaAnimeInfo.episodes);
+
+      // Find the episode by number
+      const episode = yumaAnimeInfo.episodes.find((ep: any) => ep.number === episodeNumber);
+
+      if (episode && episode.id) {
+        console.log('✅ Found Yuma episode ID:', episode.id);
+        setYumaEpisodeId(episode.id);
+      } else {
+        console.error('❌ Episode not found in Yuma data for episode number:', episodeNumber);
+        // Try constructing the episode ID based on common patterns
+        console.log('Available episodes:', yumaAnimeInfo.episodes.map((ep: any) => ({ number: ep.number, id: ep.id })));
+
+        // According to your docs, the format should be: anime-name$episode$number
+        // Let's try to construct it based on the pattern from available episodes
+        if (yumaAnimeInfo.episodes.length > 0) {
+          const firstEpisode = yumaAnimeInfo.episodes[0];
+          if (firstEpisode.id && firstEpisode.id.includes('$episode$')) {
+            // Extract the base pattern and construct the episode ID
+            const basePart = firstEpisode.id.split('$episode$')[0];
+            const constructedId = `${basePart}$episode$${episodeNumber}`;
+            console.log('🔧 Constructed episode ID based on pattern:', constructedId);
+            setYumaEpisodeId(constructedId);
+          } else {
+            // Fallback construction
+            const constructedId = `${animeId}$episode$${episodeNumber}`;
+            console.log('🔧 Fallback constructed episode ID:', constructedId);
+            setYumaEpisodeId(constructedId);
+          }
+        }
+      }
+    }
+  }, [yumaAnimeInfo, episodeNumber, animeId]);
+
+  // Fetch subtitles from HiAnime API (parallel to Yuma stream)
+  // Note: According to your docs, we should use the HiAnime episode ID for subtitles, not Yuma ID
+  useEffect(() => {
+    const fetchSubtitles = async () => {
+      if (!hiAnimeEpisodeId) return;
+
+      try {
+        console.log('📝 Fetching subtitles from HiAnime for episode:', hiAnimeEpisodeId);
+        const response = await fetch(`https://hianime-api-jzl7.onrender.com/api/v1/stream?id=${encodeURIComponent(hiAnimeEpisodeId)}`);
+        const data = await response.json();
+
+        console.log('📝 HiAnime subtitle response:', data);
+
+        if (data.success && data.data && data.data.tracks) {
+          const subtitles = data.data.tracks
+            .filter((track: any) => track.kind === "captions")
+            .map((track: any) => ({
+              label: track.label,
+              src: track.file,
+              default: track.label.toLowerCase().includes('english'),
+            }));
+
+          console.log('📝 Processed subtitles:', subtitles);
+
+          // Merge with existing subtitles from Yuma
+          setSubtitleTracks(prev => [...prev, ...subtitles]);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch subtitles:', error);
+      }
+    };
+
+    fetchSubtitles();
+  }, [hiAnimeEpisodeId]);
 
   // Select the best quality source when streaming data is available
   useEffect(() => {
@@ -53,16 +143,16 @@ export default function EpisodePlayer({
         // Prioritize M3U8 sources and higher quality
         if (a.isM3U8 && !b.isM3U8) return -1;
         if (!a.isM3U8 && b.isM3U8) return 1;
-        
+
         // Simple quality comparison (this could be more sophisticated)
         const qualityOrder = ['1080p', '720p', '480p', '360p'];
         const aIndex = qualityOrder.indexOf(a.quality);
         const bIndex = qualityOrder.indexOf(b.quality);
-        
+
         if (aIndex !== -1 && bIndex !== -1) {
           return aIndex - bIndex;
         }
-        
+
         return 0;
       });
 
@@ -96,7 +186,7 @@ export default function EpisodePlayer({
       }));
 
       setSubtitleTracks(tracks);
-      
+
       // Set default subtitle
       const defaultSubtitle = streamingData.subtitles.find(sub => sub.default);
       if (defaultSubtitle) {
@@ -107,7 +197,7 @@ export default function EpisodePlayer({
 
   const handlePlayerReady = useCallback((player: Player) => {
     setPlayer(player);
-    
+
     // Add subtitle tracks to the player
     subtitleTracks.forEach((track) => {
       player.addRemoteTextTrack(track, false);
@@ -148,6 +238,9 @@ export default function EpisodePlayer({
     }
   }, [streamingData, selectedSource]);
 
+  const isLoading = isLoadingYumaInfo || isLoadingStream;
+  const error = yumaInfoError || streamError;
+
   if (isLoading || isRetrying) {
     return (
       <Box
@@ -161,7 +254,7 @@ export default function EpisodePlayer({
       >
         <CircularProgress />
         <Typography variant="body2" sx={{ ml: 2 }}>
-          {isRetrying ? "Retrying..." : "Loading episode..."}
+          {isRetrying ? "Retrying..." : isLoadingYumaInfo ? "Finding episode..." : "Loading stream..."}
         </Typography>
       </Box>
     );
@@ -170,9 +263,9 @@ export default function EpisodePlayer({
   if (error) {
     return (
       <Box sx={{ p: 2 }}>
-        <ErrorMessages 
-          error={error} 
-          context="streaming" 
+        <ErrorMessages
+          error={error}
+          context="streaming"
           showDetails={import.meta.env.DEV}
         />
       </Box>
@@ -190,11 +283,11 @@ export default function EpisodePlayer({
   }
 
   return (
-    <StreamingErrorBoundary 
+    <StreamingErrorBoundary
       onRetry={handleRetry}
       onSelectDifferentSource={
-        streamingData?.sources && streamingData.sources.length > 1 
-          ? handleSelectDifferentSource 
+        streamingData?.sources && streamingData.sources.length > 1
+          ? handleSelectDifferentSource
           : undefined
       }
     >
@@ -219,7 +312,7 @@ export default function EpisodePlayer({
           }}
           onReady={handlePlayerReady}
         />
-        
+
         {/* Subtitle Controls Overlay */}
         {streamingData?.subtitles && streamingData.subtitles.length > 0 && (
           <Box

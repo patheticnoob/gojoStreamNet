@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { 
-  getOptimizedPosterUrl, 
-  getOptimizedBackdropUrl, 
+import {
+  getOptimizedPosterUrl,
+  getOptimizedBackdropUrl,
   getOptimizedThumbnailUrl,
   getFallbackImageUrl,
   validateImageUrl,
@@ -75,7 +75,7 @@ export function useImageWithFallback(
     try {
       // Get optimized URL based on image type
       let optimizedUrl: string;
-      
+
       switch (imageType) {
         case 'backdrop':
           optimizedUrl = getOptimizedBackdropUrl(originalUrl, size);
@@ -91,7 +91,7 @@ export function useImageWithFallback(
 
       // Validate the optimized URL
       const isOptimizedValid = await validateImageUrl(optimizedUrl);
-      
+
       if (isOptimizedValid) {
         setSrc(optimizedUrl);
         setIsLoading(false);
@@ -100,7 +100,7 @@ export function useImageWithFallback(
 
       // If optimized URL fails, try original URL
       const isOriginalValid = await validateImageUrl(originalUrl);
-      
+
       if (isOriginalValid) {
         setSrc(originalUrl);
         setIsLoading(false);
@@ -114,10 +114,10 @@ export function useImageWithFallback(
         setSrc('');
         setHasError(true);
       }
-      
+
     } catch (error) {
       console.warn('Error loading image:', error);
-      
+
       if (enableFallback) {
         setSrc(getFallbackImageUrl(imageType, size));
       } else {

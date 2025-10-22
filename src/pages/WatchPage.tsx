@@ -163,9 +163,11 @@ export function Component() {
       )}
 
       {/* Episode Player */}
-      {episodeId ? (
+      {animeId ? (
         <EpisodePlayer
-          episodeId={episodeId}
+          animeId={animeId}
+          episodeNumber={episodeNumber}
+          hiAnimeEpisodeId={episodeId}
           autoplay={true}
           muted={false}
         />
@@ -180,7 +182,7 @@ export function Component() {
           }}
         >
           <Typography variant="h6">
-            Loading episode...
+            No anime specified
           </Typography>
         </Box>
       )}

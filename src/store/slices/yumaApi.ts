@@ -24,38 +24,51 @@ export const yumaApi = createApi({
   tagTypes: [CACHE_TAGS.STREAM, CACHE_TAGS.EPISODE_INFO],
   keepUnusedDataFor: KEEP_UNUSED_DATA_FOR.STREAMING,
   endpoints: (build) => ({
-    // Get streaming data for an episode
-    getStreamingData: build.query<StreamingData, string>({
-      query: (episodeId) => `/stream?id=${encodeURIComponent(episodeId)}`,
-      transformResponse: (response: any): StreamingData => ({
-        sources: response.data?.sources?.map((source: any) => ({
-          url: source.url,
-          quality: source.quality,
-          isM3U8: source.isM3U8,
-        })) || response.sources?.map((source: any) => ({
-          url: source.url,
-          quality: source.quality,
-          isM3U8: source.isM3U8,
-        })) || [],
-        subtitles: response.data?.subtitles?.map((subtitle: any) => ({
-          label: subtitle.label,
-          src: subtitle.src,
-          default: subtitle.default,
-        })) || response.subtitles?.map((subtitle: any) => ({
-          label: subtitle.label,
-          src: subtitle.src,
-          default: subtitle.default,
-        })) || [],
-        intro: response.data?.intro || response.intro,
-        outro: response.data?.outro || response.outro,
-      }),
-      providesTags: (result, error, episodeId) => [
+    // Step 1: Get Yuma anime info to find episode IDs
+    getYumaAnimeInfo: build.query<any, string>({
+      query: (animeId) => `/info/${encodeURIComponent(animeId)}`,
+      transformResponse: (response: any) => {
+        console.log('🔍 Yuma Anime Info Response:', response);
+        // The response should contain episodes array with Yuma-specific episode IDs
+        return response;
+      },
+      providesTags: (result, error, animeId) => [
+        { type: CACHE_TAGS.EPISODE_INFO, id: `anime-${animeId}` },
+      ],
+      keepUnusedDataFor: KEEP_UNUSED_DATA_FOR.CRITICAL,
+    }),
+
+    // Step 2: Get streaming data using Yuma episode ID
+    getStreamingData: build.query<StreamingData, { episodeId: string; type?: string }>({
+      query: ({ episodeId, type = "sub" }) => {
+        const url = `/watch?episodeId=${encodeURIComponent(episodeId)}&type=${type}`;
+        console.log('🎥 Requesting stream from:', url);
+        return url;
+      },
+      transformResponse: (response: any): StreamingData => {
+        console.log('🎬 Stream Response:', response);
+        return {
+          sources: response.sources?.map((source: any) => ({
+            url: source.url,
+            quality: source.quality,
+            isM3U8: source.isM3U8,
+          })) || [],
+          subtitles: response.subtitles?.map((subtitle: any) => ({
+            label: subtitle.label,
+            src: subtitle.src,
+            default: subtitle.default,
+          })) || [],
+          intro: response.intro,
+          outro: response.outro,
+        };
+      },
+      providesTags: (result, error, { episodeId }) => [
         { type: CACHE_TAGS.STREAM, id: episodeId },
       ],
       keepUnusedDataFor: KEEP_UNUSED_DATA_FOR.STREAMING,
     }),
 
-    // Get episode information
+    // Get episode information (legacy - keeping for compatibility)
     getEpisodeInfo: build.query<EpisodeInfo, string>({
       query: (episodeId) => `/info?id=${encodeURIComponent(episodeId)}`,
       transformResponse: (response: any): EpisodeInfo => ({
@@ -73,4 +86,8 @@ export const yumaApi = createApi({
   }),
 });
 
-export const { useGetStreamingDataQuery, useGetEpisodeInfoQuery } = yumaApi;
+export const { 
+  useGetYumaAnimeInfoQuery,
+  useGetStreamingDataQuery, 
+  useGetEpisodeInfoQuery 
+} = yumaApi;
