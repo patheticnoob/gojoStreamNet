@@ -50,15 +50,62 @@ export default function EpisodePlayer({
   console.log('- Anime ID:', animeId);
   console.log('- Episode Number:', episodeNumber);
   console.log('- HiAnime Episode ID:', hiAnimeEpisodeId);
+  console.log('- HiAnime Episode ID Type:', typeof hiAnimeEpisodeId);
+  console.log('- HiAnime Episode ID Length:', hiAnimeEpisodeId?.length);
   console.log('- Streaming Data:', streamingData);
   console.log('- Loading Stream:', isLoadingStream);
-  console.log('- Stream Error:', streamError);
   console.log('- Stream Error:', streamError);
   console.log('- Selected Source:', selectedSource);
   console.log('- Video Sources:', videoSources);
 
   // Using HiAnime episode ID directly for Yuma streaming API
   console.log('🔍 Using HiAnime episode ID directly:', hiAnimeEpisodeId);
+
+  // Direct API calls for testing (will show CORS errors but we can see the URLs)
+  useEffect(() => {
+    if (!hiAnimeEpisodeId) return;
+
+    const testDirectApiCalls = async () => {
+      console.log('🧪 TESTING DIRECT API CALLS:');
+      console.log('🧪 Episode ID received:', hiAnimeEpisodeId);
+      console.log('🧪 Episode ID format check:', {
+        hasColonColon: hiAnimeEpisodeId.includes('::'),
+        hasEpEquals: hiAnimeEpisodeId.includes('::ep='),
+        parts: hiAnimeEpisodeId.split('::')
+      });
+      
+      // Test Yuma streaming API call
+      const yumaStreamUrl = `https://yumaapi.vercel.app/watch?episodeId=${encodeURIComponent(hiAnimeEpisodeId)}&type=sub`;
+      console.log('🎬 Yuma Stream API URL:', yumaStreamUrl);
+      console.log('🎬 Encoded Episode ID:', encodeURIComponent(hiAnimeEpisodeId));
+      
+      try {
+        console.log('🎬 Making direct call to Yuma streaming API...');
+        const yumaResponse = await fetch(yumaStreamUrl);
+        const yumaData = await yumaResponse.json();
+        console.log('🎬 Yuma Stream Response:', yumaData);
+      } catch (error) {
+        console.log('🎬 Yuma Stream API Error (expected CORS):', error);
+        console.log('🎬 But the URL is correct:', yumaStreamUrl);
+      }
+
+      // Test HiAnime subtitles API call
+      const hiAnimeSubtitlesUrl = `https://hianime-api-jzl7.onrender.com/api/v1/stream?id=${encodeURIComponent(hiAnimeEpisodeId)}`;
+      console.log('📝 HiAnime Subtitles API URL:', hiAnimeSubtitlesUrl);
+      
+      try {
+        console.log('📝 Making direct call to HiAnime subtitles API...');
+        const subtitlesResponse = await fetch(hiAnimeSubtitlesUrl);
+        const subtitlesData = await subtitlesResponse.json();
+        console.log('📝 HiAnime Subtitles Response:', subtitlesData);
+      } catch (error) {
+        console.log('📝 HiAnime Subtitles API Error (expected CORS):', error);
+        console.log('📝 But the URL is correct:', hiAnimeSubtitlesUrl);
+      }
+    };
+
+    testDirectApiCalls();
+  }, [hiAnimeEpisodeId]);
 
   // Fetch subtitles from HiAnime API (parallel to Yuma stream)
   // Note: According to your docs, we should use the HiAnime episode ID for subtitles, not Yuma ID
